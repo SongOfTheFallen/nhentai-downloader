@@ -424,5 +424,6 @@ venv/
 
 
 sauces/*
-
 !sauces/index.html
+
+manga/*

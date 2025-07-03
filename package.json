@@ -1,0 +1,21 @@
+{
+  "name": "nhentai-downloader",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A tool to download and read nhentai doujinshi locally, featuring an intuitive and user-friendly web interface.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com-songofthefallen:SongOfTheFallen/nhentai-downloader.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

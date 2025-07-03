@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Manga Library</title>
+	<link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+	<!-- ===== LIBRARY VIEW ===== -->
+	<div class="library-container" id="libraryView">
+		<div class="header">
+			<h1>Manga Library</h1>
+			<div class="stats" id="statsDisplay">Scanning…</div>
+		</div>
+
+		<div class="search-container" id="searchContainer">
+			<input id="searchBar" class="search-bar" placeholder="Search tags, artists, characters…"
+				autocomplete="off" />
+			<div class="search-hint">
+				Use <kbd>#123</kbd> for number • <kbd>Enter</kbd> search • <kbd>Esc</kbd> clear
+			</div>
+		</div>
+
+		<div class="controls-bar">
+			<div class="results-count" id="resultsCount"></div>
+			<div class="view-toggle">
+				<button class="toggle-btn active" id="normalView">Normal</button>
+				<button class="toggle-btn" id="compactView">Compact</button>
+				<button class="toggle-btn" id="previewToggle">Hide Thumbs</button>
+			</div>
+		</div>
+
+		<div class="loading-library" id="loadingLibrary">
+			<div class="loading-spinner"></div>
+			<div class="progress-bar">
+				<div class="progress-fill" id="progressFill"></div>
+			</div>
+		</div>
+
+		<div class="manga-container" id="mangaContainer">
+			<div class="manga-grid" id="mangaGrid"></div>
+		</div>
+
+		<button id="loadMoreBtn" class="toggle-btn" style="display:none;margin:14px auto">Load More</button>
+		<div class="no-results" id="noResults" style="display:none">No manga found</div>
+	</div>
+
+	<!-- ===== READER VIEW ===== -->
+	<div class="reader-view" id="readerView">
+		<div class="reader-container" id="readerContainer">
+			<div class="top-controls">
+				<button class="back-button" onclick="backToLibrary()">← Library</button>
+				<button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+			</div>
+			<button class="nav-button prev" onclick="previousPage()">◀</button>
+			<button class="nav-button next" onclick="nextPage()">▶</button>
+			<div class="loading" id="loading" style="display:none">
+				<div class="loading-spinner" style="width:30px;height:30px;border-width:3px"></div>
+				<p>Loading…</p>
+			</div>
+			<div class="error" id="error" style="display:none">Failed to load page</div>
+			<img class="manga-image" id="mangaImage" alt="manga page" />
+		</div>
+		<div class="controls">
+			<span>Page</span>
+			<input id="pageInput" class="page-input" type="number" min="1" value="1" />
+			<span>of <span id="totalPages">?</span></span>
+		</div>
+	</div>
+
+	<!-- ===== RESCAN FAB ===== -->
+	<button id="rescanBtn" class="rescan-btn" title="Rescan">⟳</button>
+
+	<script src="script.js"></script>
+</body>
+
+</html>
