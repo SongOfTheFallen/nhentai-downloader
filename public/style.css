@@ -66,11 +66,21 @@
 			-webkit-text-fill-color: transparent
 		}
 
-		.stats {
-			color: #888;
-			font-size: .85rem;
-			margin-top: 2px
-		}
+                .stats {
+                        color: #888;
+                        font-size: .85rem;
+                        margin-top: 2px
+                }
+
+                .banner {
+                        text-align: center;
+                        margin-bottom: 16px
+                }
+
+                .banner img {
+                        max-width: 100%;
+                        height: auto
+                }
 
 		/* ===== SEARCH BAR ===== */
 		.search-container {
