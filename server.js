@@ -5,9 +5,26 @@ import path from "path";
 
 const PORT = process.env.PORT ?? 8080;
 const MANGA_DIR = path.resolve("manga"); // folder with 1/, 2/, …
+const AUTH_USER = process.env.AUTH_USER ?? "folly";
+const AUTH_PASS = process.env.AUTH_PASS ?? "shenanigans";
+
 
 const app = express();
+
+app.use((req, res, next) => {
+  const hdr = req.headers.authorization || "";
+  if (hdr.startsWith("Basic ")) {
+    const b64 = hdr.slice(6);
+    const [user, pass] = Buffer.from(b64, "base64").toString().split(":");
+    if (user === AUTH_USER && pass === AUTH_PASS) return next();
+  }
+  res.setHeader("WWW-Authenticate", "Basic realm=\"nhentai\"");
+  res.status(401).end("Authentication required");
+});
+
 app.use(express.static("public", { maxAge: "1h" })); // serve html/css/js
+app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" })); // serve images
+
 
 // -------- In-memory cache ----------------------------------------------------
 let mangaCache = [];        // [{ number, pages, tags, … }]
