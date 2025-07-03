@@ -15,7 +15,7 @@ A tool to download and read nhentai doujinshi locally, featuring an intuitive an
 1. Install the required dependencies:
 
    ```bash
-   pip install httpx beautifulsoup4
+   pip install httpx beautifulsoup4 lxml
    ```
 
 2. Run the downloader script:
