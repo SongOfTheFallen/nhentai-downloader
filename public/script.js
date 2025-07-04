@@ -41,6 +41,17 @@ function setupUI() {
     if (e.key === "Enter")   filterLibrary(sb.value.trim());
   });
 
+  document.getElementById("mangaGrid").addEventListener("click", e => {
+    if (!e.target.classList.contains("tag")) return;
+    const tag = e.target.textContent.trim();
+    const sb   = document.getElementById("searchBar");
+    const cur  = sb.value.trim();
+    const token = tag.includes(" ") ? `"${tag}"` : tag;
+    const parsed = parseWords(cur);
+    if (!parsed.includes(tag.toLowerCase())) sb.value = cur ? `${cur} ${token}` : token;
+    filterLibrary(sb.value.trim());
+  });
+
   document.getElementById("normalView").onclick  = () => setCompact(false);
   document.getElementById("compactView").onclick = () => setCompact(true);
   document.getElementById("previewToggle").onclick = togglePreviews;
@@ -120,6 +131,14 @@ function showLoader(on) {
   document.getElementById("loadingLibrary").style.display = on ? "block" : "none";
 }
 
+function parseWords(q) {
+  const words = [];
+  const re = /"([^"]+)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(q))) words.push((m[1] || m[2]).toLowerCase());
+  return words;
+}
+
 function handleRoute() {
   if (!libraryLoaded) return;
   const match = location.pathname.match(/^\/(\d+)(?:\/(\d+))?$/);
@@ -136,13 +155,13 @@ function handleRoute() {
  * FILTERING                                                                 *
  *****************************************************************************/
 function filterLibrary(q) {
-  q = q.toLowerCase();
+  q = q.trim();
   if (!q) filteredManga = [...mangaData];
   else if (q.startsWith("#")) {
     const n = q.slice(1);
     filteredManga = mangaData.filter(m => String(m.number).includes(n));
   } else {
-    const words = q.split(/\s+/).filter(Boolean);
+    const words = parseWords(q);
     filteredManga = mangaData.filter(m => {
       const tagset = [
         ...(m.tags || []),
