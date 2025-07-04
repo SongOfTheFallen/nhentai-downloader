@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Manga Library</title>
+	<base href="/" />
+	<link rel="stylesheet" href="/style.css" />
+
+
+	<!-- Required -->
+	<meta property="og:title" content="Manga Library" />
+	<meta property="og:description" content="Browse doujinshi online." />
+	<meta property="og:image" content="/banner.png" />
+	<meta property="og:type" content="website" />
+
+	<!-- Optional but recommended -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="theme-color" content="#1a1a1a" /> <!-- Discord’s side-bar colour -->
+
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+	<link rel="manifest" href="/assets/icons/site.webmanifest">
+	<link rel="icon" href="/assets/icons/favicon.ico" type="image/x-icon">
+
+
+
+
+</head>
+
+<body>
+	<!-- ===== LIBRARY VIEW ===== -->
+	<div class="library-container" id="libraryView">
+		<div class="header">
+			<h1>Manga Library</h1>
+			<div class="stats" id="statsDisplay">Scanning…</div>
+                        <a class="info-link" href="/info.html" target="_blank">Info</a>
+                        <button id="randomBtn" class="random-btn" title="Random Manga">Random</button>
+                </div>
+
+		<div class="search-container" id="searchContainer">
+			<input id="searchBar" class="search-bar" placeholder="Search tags, artists, characters…"
+				autocomplete="off" />
+			<div class="search-hint">
+				Use <kbd>#123</kbd> for number • <kbd>Enter</kbd> search • <kbd>Esc</kbd> clear
+			</div>
+		</div>
+
+		<div class="controls-bar">
+			<div class="results-count" id="resultsCount"></div>
+			<div class="view-toggle">
+				<button class="toggle-btn active" id="normalView">Normal</button>
+				<button class="toggle-btn" id="compactView">Compact</button>
+				<button class="toggle-btn" id="previewToggle">Hide Thumbs</button>
+			</div>
+		</div>
+
+		<div class="loading-library" id="loadingLibrary">
+			<div class="loading-spinner"></div>
+			<div class="progress-bar">
+				<div class="progress-fill" id="progressFill"></div>
+			</div>
+		</div>
+
+		<div class="manga-container" id="mangaContainer">
+			<div class="manga-grid" id="mangaGrid"></div>
+		</div>
+
+                <div id="pagination" class="pagination"></div>
+                <div class="no-results" id="noResults" style="display:none">No manga found</div>
+        </div>
+
+	<!-- ===== READER VIEW ===== -->
+	<div class="reader-view" id="readerView">
+		<div class="reader-container" id="readerContainer">
+			<div class="top-controls">
+				<button class="back-button" onclick="backToLibrary()">← Library</button>
+				<button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+			</div>
+			<button class="nav-button prev" onclick="previousPage()">◀</button>
+			<button class="nav-button next" onclick="nextPage()">▶</button>
+			<div class="loading" id="loading" style="display:none">
+				<div class="loading-spinner" style="width:30px;height:30px;border-width:3px"></div>
+				<p>Loading…</p>
+			</div>
+			<div class="error" id="error" style="display:none">Failed to load page</div>
+			<img class="manga-image" id="mangaImage" alt="manga page" />
+		</div>
+		<div class="controls">
+			<span>Page</span>
+			<input id="pageInput" class="page-input" type="number" min="1" value="1" />
+			<span>of <span id="totalPages">?</span></span>
+		</div>
+	</div>
+
+	<!-- ===== RESCAN FAB ===== -->
+        <button id="rescanBtn" class="rescan-btn" title="Rescan">⟳</button>
+        <button id="scrollTopBtn" class="scroll-top-btn" title="Scroll to top">▲</button>
+
+	<script src="/script.js"></script>
+</body>
+
+</html>

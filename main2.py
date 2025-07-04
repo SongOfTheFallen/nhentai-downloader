@@ -33,7 +33,7 @@ def parse_tags(url: str, headers: dict) -> dict:
     Parses the HTML to dig out the tags and metadata into a neat dictionnary.
     """
     res = httpx.get(url, headers=headers)
-    tags: dict = {"pages": None, "url": url}
+    tags: dict = {"pages": None}
 
     if (code := res.status_code) != 200:
         print(f"ERROR {code}: failed to fetch tags. URL={url}")
@@ -379,7 +379,7 @@ def download_images(
 #             break
 #
 
-index: int = 1
+index: int = 100_000
 # Full Example: https://nhentai.net/g/532611/
 BASE_URL: str = "https://nhentai.net/g/"
 
