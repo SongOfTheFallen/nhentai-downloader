@@ -78,7 +78,7 @@ app.get("/api/manga/:num", (req, res) => {
 });
 
 // Serve index.html for direct links like /123/1
-app.get("/:num/:page?", (req, res, next) => {
+app.get("/:num{/:page}", (req, res, next) => {
   if (/^\d+$/.test(req.params.num)) {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   } else {
