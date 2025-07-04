@@ -2,6 +2,9 @@
 import express from "express";
 import fs from "fs/promises";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = process.env.PORT ?? 8080;
 const MANGA_DIR = path.resolve("manga"); // folder with 1/, 2/, …
@@ -72,6 +75,15 @@ app.get("/api/manga/:num", (req, res) => {
   const entry = mangaCache.find(m => m.number === num);
   if (!entry) return res.status(404).end();
   res.json(entry);
+});
+
+// Serve index.html for direct links like /123/1
+app.get("/:num/:page?", (req, res, next) => {
+  if (/^\d+$/.test(req.params.num)) {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  } else {
+    next();
+  }
 });
 
 // -------- Start --------------------------------------------------------------

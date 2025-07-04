@@ -15,6 +15,7 @@ let filteredManga = [];                  // after search/filter
 let currentManga = null;
 let currentPage  = 1;
 let maxPage      = 1;
+let libraryLoaded = false;
 
 /*****************************************************************************
  * INIT                                                                      *
@@ -22,6 +23,9 @@ let maxPage      = 1;
 window.addEventListener("DOMContentLoaded", async () => {
   setupUI();
   await loadLibrary();                   // first load
+  libraryLoaded = true;
+  handleRoute();
+  window.addEventListener("popstate", handleRoute);
 });
 
 /*****************************************************************************
@@ -107,6 +111,18 @@ async function loadLibrary(rescan = false) {
 
 function showLoader(on) {
   document.getElementById("loadingLibrary").style.display = on ? "block" : "none";
+}
+
+function handleRoute() {
+  if (!libraryLoaded) return;
+  const match = location.pathname.match(/^\/(\d+)(?:\/(\d+))?$/);
+  if (match) {
+    const num  = parseInt(match[1], 10);
+    const page = match[2] ? parseInt(match[2], 10) : 1;
+    openManga(num, page, false);
+  } else {
+    backToLibrary(false);
+  }
 }
 
 /*****************************************************************************
@@ -255,18 +271,20 @@ function togglePreviews() {
 /*****************************************************************************
  * READER                                                                    *
  *****************************************************************************/
-function openManga(num) {
+function openManga(num, page = 1, pushHistory = true) {
   currentManga = num;
   const meta   = mangaData.find(m => m.number === num);
   if (!meta) return;
 
   maxPage = meta.pages;
-  currentPage = 1;
+  currentPage = Math.min(Math.max(page, 1), maxPage);
   document.getElementById("totalPages").textContent = maxPage;
-  document.getElementById("pageInput").value = 1;
+  document.getElementById("pageInput").value = currentPage;
 
   document.getElementById("libraryView").style.display = "none";
   document.getElementById("readerView").classList.add("active");
+
+  if (pushHistory) history.pushState({}, "", `/${currentManga}/${currentPage}`);
 
   loadPage();
 }
@@ -299,6 +317,7 @@ function nextPage() {
   currentPage++;
   document.getElementById("pageInput").value = currentPage;
   loadPage();
+  history.replaceState({}, "", `/${currentManga}/${currentPage}`);
 }
 
 function previousPage() {
@@ -306,18 +325,22 @@ function previousPage() {
   currentPage--;
   document.getElementById("pageInput").value = currentPage;
   loadPage();
+  history.replaceState({}, "", `/${currentManga}/${currentPage}`);
 }
 
 function gotoPage(n) {
   if (n < 1 || n > maxPage) return;
   currentPage = n;
   loadPage();
+  history.replaceState({}, "", `/${currentManga}/${currentPage}`);
 }
 
-function backToLibrary() {
+function backToLibrary(pushHistory = true) {
   document.getElementById("readerView").classList.remove("active");
   document.getElementById("libraryView").style.display = "";
   document.exitFullscreen?.();
+  currentManga = null;
+  if (pushHistory) history.pushState({}, "", "/");
 }
 
 function toggleFullscreen() {
