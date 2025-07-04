@@ -73,6 +73,9 @@ function setupUI() {
   });
 
   document.querySelector(".top-controls").addEventListener("click", e => e.stopPropagation());
+  document.querySelectorAll(".fullscreen-btn, .back-button").forEach(btn =>
+    btn.addEventListener("click", e => e.stopPropagation())
+  );
 
   const scrollBox = document.getElementById("mangaContainer");
   scrollBox.addEventListener("scroll", () =>
@@ -345,7 +348,7 @@ function backToLibrary(pushHistory = true) {
   document.exitFullscreen?.();
   currentManga = null;
   currentPage  = 1;
-  if (pushHistory) history.pushState({}, "", "/");
+  if (pushHistory) history.replaceState({}, "", "/");
 }
 
 function toggleFullscreen() {
