@@ -224,14 +224,15 @@
 }
 
 .manga-card {
-			background: linear-gradient(135deg, #2a2a2a, #252525);
-			border-radius: 8px;
-			padding: 10px;
-			cursor: pointer;
-			border: 2px solid transparent;
-			transition: .2s;
-			display: flex;
-			flex-direction: column;
+                        position: relative;
+                        background: linear-gradient(135deg, #2a2a2a, #252525);
+                        border-radius: 8px;
+                        padding: 10px;
+                        cursor: pointer;
+                        border: 2px solid transparent;
+                        transition: .2s;
+                        display: flex;
+                        flex-direction: column;
   align-items: center
 }
 
@@ -246,11 +247,14 @@
                         font-size: .75rem;
                         padding: 2px 5px;
                         cursor: pointer;
-                        display: none
+                        display: none;
+                        opacity: .75;
+                        transition: opacity .2s
                 }
 
                 .manga-card:hover .download-btn {
-                        display: block
+                        display: block;
+                        opacity: 1
                 }
 
 .manga-grid.compact .download-btn {
@@ -261,11 +265,14 @@
                         position: absolute;
                         top: 28px;
                         right: 6px;
-                        background: #2a2a2a;
+                        background: rgba(42, 42, 42, .95);
                         border: 1px solid #555;
                         border-radius: 4px;
+                        padding: 4px 0;
                         display: none;
                         flex-direction: column;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, .4);
+                        backdrop-filter: blur(4px);
                         z-index: 50
                 }
 
@@ -273,14 +280,16 @@
                         background: transparent;
                         color: #fff;
                         border: none;
-                        padding: 4px 8px;
+                        padding: 4px 12px;
                         font-size: .75rem;
                         text-align: left;
-                        cursor: pointer
+                        cursor: pointer;
+                        white-space: nowrap
                 }
 
                 .download-menu button:hover {
-                        background: #4a9eff
+                        background: #4a9eff;
+                        color: #fff
                 }
 
 		.manga-card:hover {
