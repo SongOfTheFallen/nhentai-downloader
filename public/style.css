@@ -223,7 +223,7 @@
     display: none
 }
 
-		.manga-card {
+.manga-card {
 			background: linear-gradient(135deg, #2a2a2a, #252525);
 			border-radius: 8px;
 			padding: 10px;
@@ -232,8 +232,56 @@
 			transition: .2s;
 			display: flex;
 			flex-direction: column;
-			align-items: center
-		}
+  align-items: center
+}
+
+                .download-btn {
+                        position: absolute;
+                        top: 6px;
+                        right: 6px;
+                        background: rgba(74, 158, 255, .8);
+                        border: none;
+                        color: #fff;
+                        border-radius: 4px;
+                        font-size: .75rem;
+                        padding: 2px 5px;
+                        cursor: pointer;
+                        display: none
+                }
+
+                .manga-card:hover .download-btn {
+                        display: block
+                }
+
+.manga-grid.compact .download-btn {
+                        display: none !important
+                }
+
+                .download-menu {
+                        position: absolute;
+                        top: 28px;
+                        right: 6px;
+                        background: #2a2a2a;
+                        border: 1px solid #555;
+                        border-radius: 4px;
+                        display: none;
+                        flex-direction: column;
+                        z-index: 50
+                }
+
+                .download-menu button {
+                        background: transparent;
+                        color: #fff;
+                        border: none;
+                        padding: 4px 8px;
+                        font-size: .75rem;
+                        text-align: left;
+                        cursor: pointer
+                }
+
+                .download-menu button:hover {
+                        background: #4a9eff
+                }
 
 		.manga-card:hover {
 			transform: translateY(-4px);

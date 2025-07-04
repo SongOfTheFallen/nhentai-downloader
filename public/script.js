@@ -243,9 +243,52 @@ function createCard(m) {
        ${tags.map(t => `<span class="tag ${t.tType}">${t.name}</span>`).join("")}
      </div>`;
 
+  const dlBtn  = document.createElement('button');
+  dlBtn.className = 'download-btn';
+  dlBtn.textContent = '↓';
+  dlBtn.title = 'Download';
+
+  const menu = document.createElement('div');
+  menu.className = 'download-menu';
+  menu.innerHTML = '<button data-type="archive">Archive</button><button data-type="pdf">PDF</button>';
+
+  dlBtn.onclick = e => {
+    e.stopPropagation();
+    closeAllMenus();
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+  };
+
+  menu.onclick = e => {
+    e.stopPropagation();
+    const type = e.target.dataset.type;
+    if (!type) return;
+    downloadManga(m.number, type);
+    menu.style.display = 'none';
+  };
+
+  card.appendChild(dlBtn);
+  card.appendChild(menu);
+
   if (previewsOn) thumbObserver.observe(card.querySelector(".manga-thumb"));
   return card;
 }
+
+function downloadManga(num, type) {
+  const link = document.createElement('a');
+  link.href = `/api/manga/${num}/${type}`;
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function closeAllMenus() {
+  document.querySelectorAll('.download-menu').forEach(m => {
+    m.style.display = 'none';
+  });
+}
+
+document.addEventListener('click', closeAllMenus);
 
 function loadThumb(img) {
   if (img.dataset.loaded) return;
