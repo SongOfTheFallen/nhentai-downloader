@@ -55,7 +55,7 @@
 		/* ===== HEADER ===== */
                 .header {
                         text-align: center;
-                        margin-bottom: 18px;
+                        margin-bottom: 28px;
                         position: relative
                 }
 
@@ -91,7 +91,7 @@
 		.search-container {
 			margin-bottom: 16px;
 			position: sticky;
-			top: 8px;
+                        top: 12px;
 			z-index: 120;
 			background: rgba(26, 26, 26, .9);
 			backdrop-filter: blur(8px);
@@ -222,16 +222,18 @@
 			box-shadow: 0 5px 16px rgba(74, 158, 255, .18)
 		}
 
-		.manga-thumb {
-			width: 100%;
-			height: auto;
-			max-height: 220px;
-			object-fit: contain;
-			border-radius: 5px;
-			margin-bottom: 6px;
-			background: #222;
-			display: block
-		}
+                .manga-thumb {
+                        width: 100%;
+                        height: auto;
+                        max-height: 220px;
+                        object-fit: contain;
+                        border-radius: 5px;
+                        margin-bottom: 6px;
+                        background: #222;
+                        display: block;
+                        user-select: none;
+                        -webkit-user-select: none
+                }
 
 		.no-previews .manga-thumb {
 			display: none !important
@@ -395,6 +397,8 @@
     border-radius: 8px;
     box-shadow: 0 7px 22px rgba(0, 0, 0, .5);
     display: none;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 		.manga-image.active {
