@@ -58,6 +58,7 @@ function setupUI() {
     const sb = document.getElementById("searchBar");
     sb.value = "";
     filterLibrary("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   document.getElementById("normalView").onclick  = () => setCompact(false);

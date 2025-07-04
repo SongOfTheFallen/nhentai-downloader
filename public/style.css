@@ -58,13 +58,14 @@
 			margin-bottom: 18px
 		}
 
-		.header h1 {
-			font-size: 2.2rem;
-			font-weight: 700;
-			background: linear-gradient(45deg, #4a9eff, #00d4ff);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent
-		}
+.header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    background: linear-gradient(45deg, #4a9eff, #00d4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    cursor: pointer
+}
 
 		.stats {
 			color: #888;
@@ -370,17 +371,17 @@
 		}
 
 		/* ===== READER ===== */
-		.manga-image {
-			/* let the image scale to the full height that the
-	   reader container actually has, so nothing is cut off */
-			max-height: 100%;
-			min-height: 0%;
-			width: auto;
-			object-fit: contain;
-			border-radius: 8px;
-			box-shadow: 0 7px 22px rgba(0, 0, 0, .5);
-			display: none;
-		}
+.manga-image {
+    /* let the image scale so the whole page is visible without cropping */
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 7px 22px rgba(0, 0, 0, .5);
+    display: none;
+}
 
 		.manga-image.active {
 			display: block;
