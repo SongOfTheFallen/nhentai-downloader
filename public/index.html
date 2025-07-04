@@ -4,20 +4,28 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Manga Library</title>
-        <base href="/" />
-        <link rel="stylesheet" href="/style.css" />
+	<title>Manga Library</title>
+	<base href="/" />
+	<link rel="stylesheet" href="/style.css" />
 
 
 	<!-- Required -->
 	<meta property="og:title" content="Manga Library" />
 	<meta property="og:description" content="Browse doujinshi online." />
-        <meta property="og:image" content="/banner.png" />
+	<meta property="og:image" content="/banner.png" />
 	<meta property="og:type" content="website" />
 
 	<!-- Optional but recommended -->
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#1a1a1a" /> <!-- Discord’s side-bar colour -->
+
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+	<link rel="manifest" href="/assets/icons/site.webmanifest">
+	<link rel="icon" href="/assets/icons/favicon.ico" type="image/x-icon">
+
 
 
 
@@ -26,11 +34,11 @@
 <body>
 	<!-- ===== LIBRARY VIEW ===== -->
 	<div class="library-container" id="libraryView">
-                <div class="header">
-                        <h1>Manga Library</h1>
-                        <div class="stats" id="statsDisplay">Scanning…</div>
-                        <a class="info-link" href="/info.html" target="_blank">Info</a>
-                </div>
+		<div class="header">
+			<h1>Manga Library</h1>
+			<div class="stats" id="statsDisplay">Scanning…</div>
+			<a class="info-link" href="/info.html" target="_blank">Info</a>
+		</div>
 
 		<div class="search-container" id="searchContainer">
 			<input id="searchBar" class="search-bar" placeholder="Search tags, artists, characters…"
@@ -90,7 +98,7 @@
 	<!-- ===== RESCAN FAB ===== -->
 	<button id="rescanBtn" class="rescan-btn" title="Rescan">⟳</button>
 
-        <script src="/script.js"></script>
+	<script src="/script.js"></script>
 </body>
 
 </html>

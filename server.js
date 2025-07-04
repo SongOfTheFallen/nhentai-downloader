@@ -26,6 +26,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static("public", { maxAge: "1h" })); // serve html/css/js
+app.use('/assets', express.static('assets'));
 app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" })); // serve images
 
 
