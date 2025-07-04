@@ -43,13 +43,21 @@ function setupUI() {
 
   document.getElementById("mangaGrid").addEventListener("click", e => {
     if (!e.target.classList.contains("tag")) return;
-    const tag = e.target.textContent.trim();
+    e.stopPropagation();
+    const tag  = e.target.textContent.trim();
     const sb   = document.getElementById("searchBar");
     const cur  = sb.value.trim();
     const token = tag.includes(" ") ? `"${tag}"` : tag;
     const parsed = parseWords(cur);
-    if (!parsed.includes(tag.toLowerCase())) sb.value = cur ? `${cur} ${token}` : token;
+    if (!parsed.includes(tag.toLowerCase()))
+      sb.value = cur ? `${cur} ${token}` : token;
     filterLibrary(sb.value.trim());
+  });
+
+  document.querySelector(".header h1").addEventListener("click", () => {
+    const sb = document.getElementById("searchBar");
+    sb.value = "";
+    filterLibrary("");
   });
 
   document.getElementById("normalView").onclick  = () => setCompact(false);

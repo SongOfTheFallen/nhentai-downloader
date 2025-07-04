@@ -176,10 +176,18 @@
 			padding: 14px
 		}
 
-		.manga-grid.compact {
-			grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-			gap: 9px
-		}
+.manga-grid.compact {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 9px
+}
+
+.manga-grid.compact .manga-tags {
+    display: none
+}
+
+.manga-grid.compact .manga-info:nth-of-type(n+3) {
+    display: none
+}
 
 		.manga-card {
 			background: linear-gradient(135deg, #2a2a2a, #252525);
