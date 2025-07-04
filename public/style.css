@@ -13,14 +13,15 @@
 			box-sizing: border-box
 		}
 
-		body {
-			background: #1a1a1a;
-			color: #fff;
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                body {
+                        background: #1a1a1a;
+                        color: #fff;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                         min-height: 100vh;
-                        padding: 20px 0;
+                        padding: 20px;
+                        font-size: .95rem;
                         overflow-y: auto
-		}
+                }
 
 		/* ===== LAYOUT ===== */
 .library-container {
@@ -80,7 +81,10 @@
         top: 0;
         right: 0;
         color: #4a9eff;
-        font-size: .8rem;
+        font-size: 1rem;
+        padding: 4px 8px;
+        border: 1px solid #4a9eff;
+        border-radius: 6px;
         text-decoration: none
 }
 
@@ -178,12 +182,10 @@
 		}
 
 		/* ===== GRID ===== */
-		.manga-container {
-			max-height: 70vh;
-			overflow: auto;
-			border: 1px solid #222;
-			border-radius: 6px
-		}
+.manga-container {
+        border: 1px solid #222;
+        border-radius: 6px
+}
 
 		.manga-grid {
 			display: grid;
@@ -541,19 +543,43 @@
 		}
 
 		/* ===== RESPONSIVE ===== */
-		@media(max-width:768px) {
-			.manga-grid {
-				grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-				gap: 8px
-			}
+                @media(max-width:768px) {
+                        .manga-grid {
+                                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                                gap: 8px
+                        }
 
 			.manga-number {
 				font-size: 1.25rem
 			}
 
-			.nav-button {
-				width: 48px;
-				height: 82px;
-				font-size: 1.5rem
-			}
-		}
+                        .nav-button {
+                                width: 48px;
+                                height: 82px;
+                                font-size: 1.5rem
+                        }
+                }
+
+                /* ===== PAGINATION ===== */
+                .pagination {
+                        margin: 16px 0;
+                        text-align: center;
+                        display: flex;
+                        justify-content: center;
+                        gap: 6px
+                }
+
+                .page-btn {
+                        padding: 4px 10px;
+                        background: #2a2a2a;
+                        border: 1px solid #444;
+                        color: #fff;
+                        border-radius: 6px;
+                        font-size: .85rem;
+                        cursor: pointer
+                }
+
+                .page-btn.active {
+                        background: #4a9eff;
+                        border-color: #4a9eff
+                }

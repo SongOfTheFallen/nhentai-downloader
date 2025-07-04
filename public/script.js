@@ -9,7 +9,7 @@ const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const PAGE_SIZE = 250;                   // cards per batch
 
 let previewsOn  = true;
-let itemsShown  = PAGE_SIZE;
+let libraryPage = 1;
 let mangaData   = [];                    // full list from server
 let filteredManga = [];                  // after search/filter
 let currentManga = null;
@@ -66,10 +66,6 @@ function setupUI() {
   document.getElementById("normalView").onclick  = () => setCompact(false);
   document.getElementById("compactView").onclick = () => setCompact(true);
   document.getElementById("previewToggle").onclick = togglePreviews;
-  document.getElementById("loadMoreBtn").onclick  = () => {
-    itemsShown = Math.min(itemsShown + PAGE_SIZE, filteredManga.length);
-    renderGrid();
-  };
   document.getElementById("pageInput")
     .addEventListener("change", e => {
       const n = parseInt(e.target.value, 10);
@@ -100,16 +96,16 @@ function setupUI() {
   );
 
   const scrollBox = document.getElementById("mangaContainer");
-  scrollBox.addEventListener("scroll", () =>
+  window.addEventListener("scroll", () =>
     document.getElementById("searchContainer")
-            .classList.toggle("compact", scrollBox.scrollTop > 35)
+            .classList.toggle("compact", window.scrollY > 35)
   );
 
   thumbObserver = new IntersectionObserver(entries => {
     entries.forEach(ent => {
       if (ent.isIntersecting) { loadThumb(ent.target); thumbObserver.unobserve(ent.target); }
     });
-  }, { root: scrollBox, rootMargin: "120px" });
+  }, { root: null, rootMargin: "120px" });
 
   // “Rescan” button asks server to rebuild cache, then reloads JSON
   document.getElementById("rescanBtn").onclick = () => loadLibrary(true);
@@ -126,7 +122,7 @@ async function loadLibrary(rescan = false) {
     mangaData     = await res.json();
     filteredManga = [...mangaData];
 
-    itemsShown = PAGE_SIZE;
+    libraryPage = 1;
     updateStats();
     updateCounts();
     renderGrid();
@@ -186,7 +182,7 @@ function filterLibrary(q) {
       return words.every(w => tagset.some(t => t.includes(w)));
     });
   }
-  itemsShown = PAGE_SIZE;
+  libraryPage = 1;
   updateCounts();
   renderGrid();
 }
@@ -201,18 +197,18 @@ function renderGrid() {
   if (!filteredManga.length) {
     grid.innerHTML = "";
     empty.style.display = "block";
-    document.getElementById("loadMoreBtn").style.display = "none";
+    document.getElementById("pagination").innerHTML = "";
     return;
   }
   empty.style.display = "none";
 
+  const start = (libraryPage - 1) * PAGE_SIZE;
   const frag = document.createDocumentFragment();
-  filteredManga.slice(0, itemsShown).forEach(m => frag.appendChild(createCard(m)));
+  filteredManga.slice(start, start + PAGE_SIZE).forEach(m => frag.appendChild(createCard(m)));
   grid.innerHTML = "";
   grid.appendChild(frag);
 
-  document.getElementById("loadMoreBtn").style.display =
-    itemsShown < filteredManga.length ? "block" : "none";
+  updatePagination();
 
   updateCounts();
 }
@@ -277,8 +273,37 @@ function updateStats() {
 }
 
 function updateCounts() {
+  const start = (libraryPage - 1) * PAGE_SIZE + 1;
+  const end   = Math.min(libraryPage * PAGE_SIZE, filteredManga.length);
   document.getElementById("resultsCount").textContent =
-    `${Math.min(itemsShown, filteredManga.length)} / ${filteredManga.length}`;
+    `${start}-${end} / ${filteredManga.length}`;
+}
+
+function updatePagination() {
+  const totalPages = Math.ceil(filteredManga.length / PAGE_SIZE);
+  const container = document.getElementById("pagination");
+  container.innerHTML = "";
+  if (totalPages <= 1) return;
+
+  for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.className = "page-btn" + (i === libraryPage ? " active" : "");
+    btn.onclick = () => { libraryPage = i; renderGrid(); };
+    container.appendChild(btn);
+  }
+
+  if (totalPages > 10) {
+    const dots = document.createElement("span");
+    dots.textContent = "...";
+    container.appendChild(dots);
+
+    const last = document.createElement("button");
+    last.textContent = totalPages;
+    last.className = "page-btn" + (libraryPage === totalPages ? " active" : "");
+    last.onclick = () => { libraryPage = totalPages; renderGrid(); };
+    container.appendChild(last);
+  }
 }
 
 /*****************************************************************************
