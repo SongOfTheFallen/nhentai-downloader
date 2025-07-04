@@ -25,7 +25,7 @@ app.use((req, res, next) => {
   res.status(401).end("Authentication required");
 });
 
-app.use(express.static("public", { maxAge: "1h" })); // serve html/css/js
+app.use(express.static("public", { maxAge: 0 })); // serve html/css/js without caching
 app.use('/assets', express.static('assets'));
 app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" })); // serve images
 

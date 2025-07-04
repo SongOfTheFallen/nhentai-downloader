@@ -375,7 +375,9 @@ function gotoPage(n) {
 function backToLibrary(pushHistory = true) {
   document.getElementById("readerView").classList.remove("active");
   document.getElementById("libraryView").style.display = "";
-  document.exitFullscreen?.();
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
   currentManga = null;
   currentPage  = 1;
   if (pushHistory) history.replaceState({}, "", "/");
