@@ -150,6 +150,17 @@ function parseWords(q) {
   return words;
 }
 
+function cmp(val, op, target) {
+  switch (op) {
+    case '<':  return val < target;
+    case '<=': return val <= target;
+    case '>':  return val > target;
+    case '>=': return val >= target;
+    case '=':  return val === target;
+    default:   return false;
+  }
+}
+
 function handleRoute() {
   if (!libraryLoaded) return;
   const match = location.pathname.match(/^\/(\d+)(?:\/(\d+))?$/);
@@ -183,7 +194,27 @@ function filterLibrary(q) {
         ...(m.languages || []),
         ...(m.categories || []),
       ].map(t => t.name.toLowerCase());
-      return words.every(w => tagset.some(t => t.includes(w)));
+
+      const time = m.datetime_iso8601 ? new Date(m.datetime_iso8601).getTime() : 0;
+
+      return words.every(w => {
+        let m1;
+        if ((m1 = w.match(/^([<>]=?|=)(\d+)$/))) {
+          const [, op, val] = m1;
+          return cmp(m.pages, op, +val);
+        }
+        if ((m1 = w.match(/^time=([0-9-]+)\.\.([0-9-]+)$/))) {
+          const [, from, to] = m1;
+          const f = new Date(from).getTime();
+          const t = new Date(to).getTime();
+          return time >= f && time <= t;
+        }
+        if ((m1 = w.match(/^time([<>]=?|=)([0-9-]+)$/))) {
+          const [, op, date] = m1;
+          return cmp(time, op, new Date(date).getTime());
+        }
+        return tagset.some(t => t.includes(w));
+      });
     });
   }
   libraryPage = 1;
