@@ -67,6 +67,7 @@ function setupUI() {
   document.getElementById("normalView").onclick  = () => setCompact(false);
   document.getElementById("compactView").onclick = () => setCompact(true);
   document.getElementById("previewToggle").onclick = togglePreviews;
+  document.getElementById("randomBtn").onclick = openRandomManga;
   document.getElementById("pageInput")
     .addEventListener("change", e => {
       const n = parseInt(e.target.value, 10);
@@ -331,6 +332,13 @@ function togglePreviews() {
     document.querySelectorAll(".manga-thumb")
             .forEach(img => thumbObserver.unobserve(img));
   }
+}
+
+function openRandomManga() {
+  if (!mangaData.length) return;
+  const idx = Math.floor(Math.random() * mangaData.length);
+  const num = mangaData[idx].number;
+  openManga(num, 1, true);
 }
 
 /*****************************************************************************
