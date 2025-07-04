@@ -68,9 +68,11 @@ function setupUI() {
   const rc = document.getElementById("readerContainer");
   rc.addEventListener("click", e => {
     if (!document.getElementById("readerView").classList.contains("active")) return;
-    if (e.target.classList.contains("nav-button") || e.target.closest(".top-controls")) return;
+    if (e.target.classList?.contains("nav-button") || e.target.closest?.(".top-controls")) return;
     (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
   });
+
+  document.querySelector(".top-controls").addEventListener("click", e => e.stopPropagation());
 
   const scrollBox = document.getElementById("mangaContainer");
   scrollBox.addEventListener("scroll", () =>
@@ -315,7 +317,7 @@ function loadPage() {
 }
 
 function nextPage() {
-  if (currentPage >= maxPage) return;
+  if (!currentManga || currentPage >= maxPage) return;
   currentPage++;
   document.getElementById("pageInput").value = currentPage;
   loadPage();
@@ -323,7 +325,7 @@ function nextPage() {
 }
 
 function previousPage() {
-  if (currentPage <= 1) return;
+  if (!currentManga || currentPage <= 1) return;
   currentPage--;
   document.getElementById("pageInput").value = currentPage;
   loadPage();
@@ -331,7 +333,7 @@ function previousPage() {
 }
 
 function gotoPage(n) {
-  if (n < 1 || n > maxPage) return;
+  if (!currentManga || n < 1 || n > maxPage) return;
   currentPage = n;
   loadPage();
   history.replaceState({}, "", `/${currentManga}/${currentPage}`);
@@ -342,6 +344,7 @@ function backToLibrary(pushHistory = true) {
   document.getElementById("libraryView").style.display = "";
   document.exitFullscreen?.();
   currentManga = null;
+  currentPage  = 1;
   if (pushHistory) history.pushState({}, "", "/");
 }
 
