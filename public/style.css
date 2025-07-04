@@ -579,7 +579,29 @@
                         cursor: pointer
                 }
 
-                .page-btn.active {
-                        background: #4a9eff;
-                        border-color: #4a9eff
-                }
+.page-btn.active {
+        background: #4a9eff;
+        border-color: #4a9eff
+}
+
+/* ===== SCROLL TO TOP BUTTON ===== */
+.scroll-top-btn {
+        position: fixed;
+        right: 18px;
+        bottom: 70px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #4a9eff;
+        border: none;
+        color: #fff;
+        font-size: 1rem;
+        cursor: pointer;
+        opacity: .3;
+        transition: opacity .2s;
+        display: none
+}
+
+.scroll-top-btn:hover {
+        opacity: .8
+}

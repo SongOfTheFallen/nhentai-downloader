@@ -10,6 +10,7 @@ const PAGE_SIZE = 250;                   // cards per batch
 
 let previewsOn  = true;
 let libraryPage = 1;
+let libraryScrollY = 0;
 let mangaData   = [];                    // full list from server
 let filteredManga = [];                  // after search/filter
 let currentManga = null;
@@ -95,11 +96,13 @@ function setupUI() {
     btn.addEventListener("click", e => e.stopPropagation())
   );
 
-  const scrollBox = document.getElementById("mangaContainer");
-  window.addEventListener("scroll", () =>
+  const scrollTopBtn = document.getElementById("scrollTopBtn");
+  scrollTopBtn.onclick = () => window.scrollTo({ top : 0, behavior : "smooth" });
+  window.addEventListener("scroll", () => {
     document.getElementById("searchContainer")
-            .classList.toggle("compact", window.scrollY > 35)
-  );
+            .classList.toggle("compact", window.scrollY > 35);
+    scrollTopBtn.style.display = window.scrollY > 200 ? "block" : "none";
+  });
 
   thumbObserver = new IntersectionObserver(entries => {
     entries.forEach(ent => {
@@ -334,6 +337,7 @@ function togglePreviews() {
  * READER                                                                    *
  *****************************************************************************/
 function openManga(num, page = 1, pushHistory = true) {
+  libraryScrollY = window.scrollY;
   currentManga = num;
   const meta   = mangaData.find(m => m.number === num);
   if (!meta) return;
@@ -405,6 +409,7 @@ function backToLibrary(pushHistory = true) {
   }
   currentManga = null;
   currentPage  = 1;
+  window.scrollTo(0, libraryScrollY);
   if (pushHistory) history.replaceState({}, "", "/");
 }
 
