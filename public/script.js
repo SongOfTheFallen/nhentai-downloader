@@ -418,7 +418,7 @@ function backToLibrary(pushHistory = true) {
   currentManga = null;
   currentPage  = 1;
   window.scrollTo(0, libraryScrollY);
-  if (pushHistory) history.replaceState({}, "", "/");
+  if (pushHistory) history.pushState({}, "", "/");
 }
 
 function toggleFullscreen() {
