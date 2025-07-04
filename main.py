@@ -33,7 +33,7 @@ def parse_tags(url: str, headers: dict) -> dict:
     Parses the HTML to dig out the tags and metadata into a neat dictionnary.
     """
     res = httpx.get(url, headers=headers)
-    tags: dict = {"pages": None}
+    tags: dict = {"pages": None, "url": url}
 
     if (code := res.status_code) != 200:
         print(f"ERROR {code}: failed to fetch tags. URL={url}")
