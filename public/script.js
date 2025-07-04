@@ -15,6 +15,7 @@ let filteredManga = [];                  // after search/filter
 let currentManga = null;
 let currentPage  = 1;
 let maxPage      = 1;
+let libraryLoaded = false;
 
 /*****************************************************************************
  * INIT                                                                      *
@@ -22,6 +23,9 @@ let maxPage      = 1;
 window.addEventListener("DOMContentLoaded", async () => {
   setupUI();
   await loadLibrary();                   // first load
+  libraryLoaded = true;
+  handleRoute();
+  window.addEventListener("popstate", handleRoute);
 });
 
 /*****************************************************************************
@@ -35,6 +39,28 @@ function setupUI() {
   sb.addEventListener("keydown", e => {
     if (e.key === "Escape") { sb.value = ""; filterLibrary(""); }
     if (e.key === "Enter")   filterLibrary(sb.value.trim());
+  });
+
+  document.getElementById("mangaGrid")
+    .addEventListener(
+      "click",
+      e => {
+        if (!e.target.classList.contains("tag")) return;
+        e.stopPropagation();
+        const tag  = e.target.textContent.trim();
+        const sb   = document.getElementById("searchBar");
+        const cur  = sb.value.trim();
+        const token = tag.includes(" ") ? `"${tag}"` : tag;
+        const parsed = parseWords(cur);
+        if (!parsed.includes(tag.toLowerCase()))
+          sb.value = cur ? `${cur} ${token}` : token;
+        filterLibrary(sb.value.trim());
+      },
+      true
+    );
+
+  document.querySelector(".header h1").addEventListener("click", () => {
+    location.reload();
   });
 
   document.getElementById("normalView").onclick  = () => setCompact(false);
@@ -61,10 +87,17 @@ function setupUI() {
     }
   });
 
-  document.getElementById("readerContainer").addEventListener("click", e => {
-    if (e.target.classList.contains("nav-button")) return;
+  const rc = document.getElementById("readerContainer");
+  rc.addEventListener("click", e => {
+    if (!document.getElementById("readerView").classList.contains("active")) return;
+    if (e.target.classList?.contains("nav-button") || e.target.closest?.(".top-controls")) return;
     (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
   });
+
+  document.querySelector(".top-controls").addEventListener("click", e => e.stopPropagation());
+  document.querySelectorAll(".fullscreen-btn, .back-button").forEach(btn =>
+    btn.addEventListener("click", e => e.stopPropagation())
+  );
 
   const scrollBox = document.getElementById("mangaContainer");
   scrollBox.addEventListener("scroll", () =>
@@ -109,17 +142,37 @@ function showLoader(on) {
   document.getElementById("loadingLibrary").style.display = on ? "block" : "none";
 }
 
+function parseWords(q) {
+  const words = [];
+  const re = /"([^"]+)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(q))) words.push((m[1] || m[2]).toLowerCase());
+  return words;
+}
+
+function handleRoute() {
+  if (!libraryLoaded) return;
+  const match = location.pathname.match(/^\/(\d+)(?:\/(\d+))?$/);
+  if (match) {
+    const num  = parseInt(match[1], 10);
+    const page = match[2] ? parseInt(match[2], 10) : 1;
+    openManga(num, page, false);
+  } else {
+    backToLibrary(false);
+  }
+}
+
 /*****************************************************************************
  * FILTERING                                                                 *
  *****************************************************************************/
 function filterLibrary(q) {
-  q = q.toLowerCase();
+  q = q.trim();
   if (!q) filteredManga = [...mangaData];
   else if (q.startsWith("#")) {
     const n = q.slice(1);
     filteredManga = mangaData.filter(m => String(m.number).includes(n));
   } else {
-    const words = q.split(/\s+/).filter(Boolean);
+    const words = parseWords(q);
     filteredManga = mangaData.filter(m => {
       const tagset = [
         ...(m.tags || []),
@@ -255,18 +308,20 @@ function togglePreviews() {
 /*****************************************************************************
  * READER                                                                    *
  *****************************************************************************/
-function openManga(num) {
+function openManga(num, page = 1, pushHistory = true) {
   currentManga = num;
   const meta   = mangaData.find(m => m.number === num);
   if (!meta) return;
 
   maxPage = meta.pages;
-  currentPage = 1;
+  currentPage = Math.min(Math.max(page, 1), maxPage);
   document.getElementById("totalPages").textContent = maxPage;
-  document.getElementById("pageInput").value = 1;
+  document.getElementById("pageInput").value = currentPage;
 
   document.getElementById("libraryView").style.display = "none";
   document.getElementById("readerView").classList.add("active");
+
+  if (pushHistory) history.pushState({}, "", `/${currentManga}/${currentPage}`);
 
   loadPage();
 }
@@ -295,29 +350,35 @@ function loadPage() {
 }
 
 function nextPage() {
-  if (currentPage >= maxPage) return;
+  if (!currentManga || currentPage >= maxPage) return;
   currentPage++;
   document.getElementById("pageInput").value = currentPage;
   loadPage();
+  history.replaceState({}, "", `/${currentManga}/${currentPage}`);
 }
 
 function previousPage() {
-  if (currentPage <= 1) return;
+  if (!currentManga || currentPage <= 1) return;
   currentPage--;
   document.getElementById("pageInput").value = currentPage;
   loadPage();
+  history.replaceState({}, "", `/${currentManga}/${currentPage}`);
 }
 
 function gotoPage(n) {
-  if (n < 1 || n > maxPage) return;
+  if (!currentManga || n < 1 || n > maxPage) return;
   currentPage = n;
   loadPage();
+  history.replaceState({}, "", `/${currentManga}/${currentPage}`);
 }
 
-function backToLibrary() {
+function backToLibrary(pushHistory = true) {
   document.getElementById("readerView").classList.remove("active");
   document.getElementById("libraryView").style.display = "";
   document.exitFullscreen?.();
+  currentManga = null;
+  currentPage  = 1;
+  if (pushHistory) history.replaceState({}, "", "/");
 }
 
 function toggleFullscreen() {
