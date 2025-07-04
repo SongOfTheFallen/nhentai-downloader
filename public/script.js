@@ -65,8 +65,10 @@ function setupUI() {
     }
   });
 
-  document.getElementById("readerContainer").addEventListener("click", e => {
-    if (e.target.classList.contains("nav-button")) return;
+  const rc = document.getElementById("readerContainer");
+  rc.addEventListener("click", e => {
+    if (!document.getElementById("readerView").classList.contains("active")) return;
+    if (e.target.classList.contains("nav-button") || e.target.closest(".top-controls")) return;
     (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
   });
 
