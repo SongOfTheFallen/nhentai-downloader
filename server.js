@@ -85,6 +85,10 @@ app.get("/:num{/:page}", (req, res, next) => {
     next();
   }
 });
+// Catch-all 404 page
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+});
 
 // -------- Start --------------------------------------------------------------
 app.listen(PORT, () =>
