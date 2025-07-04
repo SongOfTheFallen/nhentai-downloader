@@ -53,10 +53,11 @@
 		}
 
 		/* ===== HEADER ===== */
-		.header {
-			text-align: center;
-			margin-bottom: 18px
-		}
+                .header {
+                        text-align: center;
+                        margin-bottom: 18px;
+                        position: relative
+                }
 
 .header h1 {
     font-size: 2.2rem;
@@ -67,11 +68,24 @@
     cursor: pointer
 }
 
-		.stats {
-			color: #888;
-			font-size: .85rem;
-			margin-top: 2px
-		}
+.stats {
+        color: #888;
+        font-size: .85rem;
+        margin-top: 2px
+}
+
+.info-link {
+        position: absolute;
+        top: 0;
+        right: 0;
+        color: #4a9eff;
+        font-size: .8rem;
+        text-decoration: none
+}
+
+.info-link:hover {
+        text-decoration: underline
+}
 
 		/* ===== SEARCH BAR ===== */
 		.search-container {
