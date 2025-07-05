@@ -178,12 +178,27 @@ function handleRoute() {
  *****************************************************************************/
 function filterLibrary(q) {
   q = q.trim();
-  if (!q) filteredManga = [...mangaData];
-  else if (q.startsWith("#")) {
-    const n = q.slice(1);
+
+  let sortField = null;
+  let sortDir   = 1;
+
+  const tokens  = q ? parseWords(q) : [];
+  const words   = [];
+  for (const t of tokens) {
+    const s = t.match(/^sort:([-]?)(id|pages|age)$/);
+    if (s) {
+      sortField = s[2];
+      sortDir   = s[1] === '-' ? -1 : 1;
+    } else {
+      words.push(t);
+    }
+  }
+
+  if (!words.length) filteredManga = [...mangaData];
+  else if (words[0] && words[0].startsWith("#") && words.length === 1) {
+    const n = words[0].slice(1);
     filteredManga = mangaData.filter(m => String(m.number).includes(n));
   } else {
-    const words = parseWords(q);
     filteredManga = mangaData.filter(m => {
       const tagset = [
         ...(m.tags || []),
@@ -217,6 +232,15 @@ function filterLibrary(q) {
       });
     });
   }
+  if (sortField) {
+    const getter = {
+      id:    m => m.number,
+      pages: m => m.pages,
+      age:   m => m.datetime_iso8601 ? new Date(m.datetime_iso8601).getTime() : 0,
+    }[sortField];
+    filteredManga.sort((a, b) => sortDir * (getter(a) - getter(b)));
+  }
+
   libraryPage = 1;
   updateCounts();
   renderGrid();

@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
 import express from "express";
 import fs from "fs/promises";
+import { createReadStream } from "fs";
+import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import archiver from "archiver";
@@ -127,9 +129,13 @@ app.get("/api/manga/:num/pdf", async (req, res) => {
       page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
     }
     const bytes = await pdf.save();
+    const tmp = path.join(os.tmpdir(), `${num}-${Date.now()}.pdf`);
+    await fs.writeFile(tmp, Buffer.from(bytes));
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${num}.pdf"`);
-    res.end(Buffer.from(bytes));
+    const stream = createReadStream(tmp);
+    stream.pipe(res);
+    stream.on('close', () => fs.unlink(tmp).catch(() => {}));
   } catch (err) {
     console.error(err);
     res.status(500).end();
