@@ -14,5 +14,18 @@
       <button type="submit">Enter</button>
     </form>
   </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const redir = params.get('redirect');
+    if (redir) {
+      const f = document.querySelector('form');
+      const h = document.createElement('input');
+      h.type = 'hidden';
+      h.name = 'redirect';
+      h.value = redir;
+      f.appendChild(h);
+      f.action = `/login?redirect=${encodeURIComponent(redir)}`;
+    }
+  </script>
 </body>
 </html>

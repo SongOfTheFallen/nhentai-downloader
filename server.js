@@ -51,18 +51,25 @@ if (PROTECT) {
   function parseCookies(c) {
     return Object.fromEntries((c || "").split(/; */).filter(Boolean).map(s => s.split("=").map(decodeURIComponent)));
   }
+  app.get("/login", (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.sendFile(path.join(__dirname, "public", "login.html"));
+  });
   app.post("/login", (req, res) => {
     if (req.body.password === APP_PASSWORD) {
       res.cookie("auth", "1", { httpOnly: true });
-      return res.redirect("/");
+      const dest = req.body.redirect || req.query.redirect || "/";
+      return res.redirect(dest);
     }
+    res.setHeader("Cache-Control", "no-store");
     res.sendFile(path.join(__dirname, "public", "login.html"));
   });
   app.use((req, res, next) => {
     if (["/login", "/login.html", "/login.css"].includes(req.path)) return next();
     const cookies = parseCookies(req.headers.cookie);
     if (cookies.auth === "1") return next();
-    res.sendFile(path.join(__dirname, "public", "login.html"));
+    const dest = encodeURIComponent(req.originalUrl);
+    res.redirect(`/login?redirect=${dest}`);
   });
 } else {
   console.log("Password protection disabled");
