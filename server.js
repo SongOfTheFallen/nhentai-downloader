@@ -6,7 +6,7 @@ import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import archiver from "archiver";
-import { PDFDocument } from "pdf-lib";
+import PDFKit from "pdfkit";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -116,26 +116,19 @@ app.get("/api/manga/:num/pdf", async (req, res) => {
   const entry = mangaCache.find(m => m.number === num);
   if (!entry) return res.status(404).end();
   try {
-    const pdf = await PDFDocument.create();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${num}.pdf"`);
+    const doc = new PDFKit({ autoFirstPage: false });
+    doc.pipe(res);
     for (let i = 1; i <= entry.pages; i++) {
       const info = await findPage(num, i);
       if (!info) continue;
       const data = await fs.readFile(info.path);
-      let img;
-      if (info.ext === 'jpg' || info.ext === 'jpeg') img = await pdf.embedJpg(data);
-      else if (info.ext === 'png') img = await pdf.embedPng(data);
-      else continue;
-      const page = pdf.addPage([img.width, img.height]);
-      page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+      const img = doc.openImage(data);
+      doc.addPage({ size: [img.width, img.height] });
+      doc.image(img, 0, 0);
     }
-    const bytes = await pdf.save();
-    const tmp = path.join(os.tmpdir(), `${num}-${Date.now()}.pdf`);
-    await fs.writeFile(tmp, Buffer.from(bytes));
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${num}.pdf"`);
-    const stream = createReadStream(tmp);
-    stream.pipe(res);
-    stream.on('close', () => fs.unlink(tmp).catch(() => {}));
+    doc.end();
   } catch (err) {
     console.error(err);
     res.status(500).end();
