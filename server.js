@@ -172,13 +172,9 @@ app.get("/api/manga/:num/pdf", async (req, res) => {
   }
 });
 
-// Serve index.html for direct links like /123/1
-app.get("/:num{/:page}", (req, res, next) => {
-  if (/^\d+$/.test(req.params.num)) {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
-  } else {
-    next();
-  }
+// Serve index.html for direct links like /123 or /123/1
+app.get(/^\/(\d+)(?:\/(\d+))?\/?$/, (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 // Catch-all 404 page
 app.use((req, res) => {
