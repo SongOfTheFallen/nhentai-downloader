@@ -425,7 +425,9 @@ function updatePagination() {
     b.onclick = () => {
       libraryPage = i;
       renderGrid();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      );
     };
     container.appendChild(b);
   };
