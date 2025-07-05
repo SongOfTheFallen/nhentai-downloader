@@ -6,10 +6,11 @@ const API_RESCAN = "/api/rescan";  // POST → optional rebuild trigger
 const MANGA_PATH = "/manga";       // static folder that contains pages
 
 const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
-const PAGE_SIZE = 250;                   // cards per batch
+const PAGE_SIZE = 30;                    // cards per batch
 
 let previewsOn  = true;
 let libraryPage = 1;
+let scrollAfterGrid = false;
 let libraryScrollY = 0;
 let mangaData   = [];                    // full list from server
 let filteredManga = [];                  // after search/filter
@@ -22,6 +23,10 @@ let libraryLoaded = false;
  * INIT                                                                      *
  *****************************************************************************/
 window.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(location.search);
+  const p = parseInt(params.get("p") || "1", 10);
+  if (!Number.isNaN(p) && p > 0) libraryPage = p;
+
   setupUI();
   await loadLibrary();                   // first load
   libraryLoaded = true;
@@ -61,7 +66,7 @@ function setupUI() {
     );
 
   document.querySelector(".header h1").addEventListener("click", () => {
-    location.reload();
+    location.href = "/";
   });
 
   document.getElementById("normalView").onclick  = () => setCompact(false);
@@ -90,6 +95,23 @@ function setupUI() {
     if (!document.getElementById("readerView").classList.contains("active")) return;
     if (e.target.classList?.contains("nav-button") || e.target.closest?.(".top-controls")) return;
     (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
+  });
+
+  let startX = null;
+  rc.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) startX = e.touches[0].clientX;
+    else startX = null; // ignore multi-touch (pinch)
+  });
+  rc.addEventListener("touchmove", e => {
+    if (e.touches.length > 1) startX = null;
+  });
+  rc.addEventListener("touchend", e => {
+    if (startX === null || e.touches.length > 0) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) {
+      dx < 0 ? nextPage() : previousPage();
+    }
+    startX = null;
   });
 
   document.querySelector(".top-controls").addEventListener("click", e => e.stopPropagation());
@@ -126,7 +148,6 @@ async function loadLibrary(rescan = false) {
     mangaData     = await res.json();
     filteredManga = [...mangaData];
 
-    libraryPage = 1;
     updateStats();
     updateCounts();
     renderGrid();
@@ -150,6 +171,17 @@ function parseWords(q) {
   return words;
 }
 
+function cmp(val, op, target) {
+  switch (op) {
+    case '<':  return val < target;
+    case '<=': return val <= target;
+    case '>':  return val > target;
+    case '>=': return val >= target;
+    case '=':  return val === target;
+    default:   return false;
+  }
+}
+
 function handleRoute() {
   if (!libraryLoaded) return;
   const match = location.pathname.match(/^\/(\d+)(?:\/(\d+))?$/);
@@ -159,6 +191,10 @@ function handleRoute() {
     openManga(num, page, false);
   } else {
     backToLibrary(false);
+    const params = new URLSearchParams(location.search);
+    const p = parseInt(params.get("p") || "1", 10);
+    libraryPage = !Number.isNaN(p) && p > 0 ? p : 1;
+    renderGrid();
   }
 }
 
@@ -167,12 +203,27 @@ function handleRoute() {
  *****************************************************************************/
 function filterLibrary(q) {
   q = q.trim();
-  if (!q) filteredManga = [...mangaData];
-  else if (q.startsWith("#")) {
-    const n = q.slice(1);
+
+  let sortField = null;
+  let sortDir   = 1;
+
+  const tokens  = q ? parseWords(q) : [];
+  const words   = [];
+  for (const t of tokens) {
+    const s = t.match(/^sort:([-]?)(id|pages|age)$/);
+    if (s) {
+      sortField = s[2];
+      sortDir   = s[1] === '-' ? -1 : 1;
+    } else {
+      words.push(t);
+    }
+  }
+
+  if (!words.length) filteredManga = [...mangaData];
+  else if (words[0] && words[0].startsWith("#") && words.length === 1) {
+    const n = words[0].slice(1);
     filteredManga = mangaData.filter(m => String(m.number).includes(n));
   } else {
-    const words = parseWords(q);
     filteredManga = mangaData.filter(m => {
       const tagset = [
         ...(m.tags || []),
@@ -183,9 +234,38 @@ function filterLibrary(q) {
         ...(m.languages || []),
         ...(m.categories || []),
       ].map(t => t.name.toLowerCase());
-      return words.every(w => tagset.some(t => t.includes(w)));
+
+      const time = m.datetime_iso8601 ? new Date(m.datetime_iso8601).getTime() : 0;
+
+      return words.every(w => {
+        let m1;
+        if ((m1 = w.match(/^([<>]=?|=)(\d+)$/))) {
+          const [, op, val] = m1;
+          return cmp(m.pages, op, +val);
+        }
+        if ((m1 = w.match(/^time=([0-9-]+)\.\.([0-9-]+)$/))) {
+          const [, from, to] = m1;
+          const f = new Date(from).getTime();
+          const t = new Date(to).getTime();
+          return time >= f && time <= t;
+        }
+        if ((m1 = w.match(/^time([<>]=?|=)([0-9-]+)$/))) {
+          const [, op, date] = m1;
+          return cmp(time, op, new Date(date).getTime());
+        }
+        return tagset.some(t => t.includes(w));
+      });
     });
   }
+  if (sortField) {
+    const getter = {
+      id:    m => m.number,
+      pages: m => m.pages,
+      age:   m => m.datetime_iso8601 ? new Date(m.datetime_iso8601).getTime() : 0,
+    }[sortField];
+    filteredManga.sort((a, b) => sortDir * (getter(a) - getter(b)));
+  }
+
   libraryPage = 1;
   updateCounts();
   renderGrid();
@@ -202,6 +282,7 @@ function renderGrid() {
     grid.innerHTML = "";
     empty.style.display = "block";
     document.getElementById("pagination").innerHTML = "";
+    updateLibraryURL();
     return;
   }
   empty.style.display = "none";
@@ -214,7 +295,14 @@ function renderGrid() {
 
   updatePagination();
 
+  updateLibraryURL();
+
   updateCounts();
+
+  if (scrollAfterGrid) {
+    scrollAfterGrid = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 function createCard(m) {
@@ -243,9 +331,52 @@ function createCard(m) {
        ${tags.map(t => `<span class="tag ${t.tType}">${t.name}</span>`).join("")}
      </div>`;
 
+  const dlBtn  = document.createElement('button');
+  dlBtn.className = 'download-btn';
+  dlBtn.textContent = '↓';
+  dlBtn.title = 'Download';
+
+  const menu = document.createElement('div');
+  menu.className = 'download-menu';
+  menu.innerHTML = '<button data-type="archive">Archive</button><button data-type="pdf">PDF</button>';
+
+  dlBtn.onclick = e => {
+    e.stopPropagation();
+    closeAllMenus();
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+  };
+
+  menu.onclick = e => {
+    e.stopPropagation();
+    const type = e.target.dataset.type;
+    if (!type) return;
+    downloadManga(m.number, type);
+    menu.style.display = 'none';
+  };
+
+  card.appendChild(dlBtn);
+  card.appendChild(menu);
+
   if (previewsOn) thumbObserver.observe(card.querySelector(".manga-thumb"));
   return card;
 }
+
+function downloadManga(num, type) {
+  const link = document.createElement('a');
+  link.href = `/api/manga/${num}/${type}`;
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function closeAllMenus() {
+  document.querySelectorAll('.download-menu').forEach(m => {
+    m.style.display = 'none';
+  });
+}
+
+document.addEventListener('click', closeAllMenus);
 
 function loadThumb(img) {
   if (img.dataset.loaded) return;
@@ -283,31 +414,45 @@ function updateCounts() {
     `${start}-${end} / ${filteredManga.length}`;
 }
 
+function updateLibraryURL() {
+  const url = libraryPage > 1 ? `/?p=${libraryPage}` : "/";
+  history.replaceState({}, "", url);
+}
+
 function updatePagination() {
   const totalPages = Math.ceil(filteredManga.length / PAGE_SIZE);
   const container = document.getElementById("pagination");
   container.innerHTML = "";
   if (totalPages <= 1) return;
+  const addBtn = i => {
+    const b = document.createElement("button");
+    b.textContent = i;
+    b.className = "page-btn" + (i === libraryPage ? " active" : "");
+    b.onclick = () => {
+      libraryPage = i;
+      scrollAfterGrid = true;
+      renderGrid();
+    };
+    container.appendChild(b);
+  };
+  const addDots = () => {
+    const s = document.createElement("span");
+    s.textContent = "...";
+    container.appendChild(s);
+  };
 
-  for (let i = 1; i <= Math.min(totalPages, 10); i++) {
-    const btn = document.createElement("button");
-    btn.textContent = i;
-    btn.className = "page-btn" + (i === libraryPage ? " active" : "");
-    btn.onclick = () => { libraryPage = i; renderGrid(); };
-    container.appendChild(btn);
-  }
+  const around = 4; // pages shown around current
+  let start = Math.max(2, libraryPage - around);
+  let end   = Math.min(totalPages - 1, libraryPage + around);
 
-  if (totalPages > 10) {
-    const dots = document.createElement("span");
-    dots.textContent = "...";
-    container.appendChild(dots);
+  if (start === 2) end = Math.min(totalPages - 1, start + around * 2);
+  if (end === totalPages - 1) start = Math.max(2, end - around * 2);
 
-    const last = document.createElement("button");
-    last.textContent = totalPages;
-    last.className = "page-btn" + (libraryPage === totalPages ? " active" : "");
-    last.onclick = () => { libraryPage = totalPages; renderGrid(); };
-    container.appendChild(last);
-  }
+  addBtn(1);
+  if (start > 2) addDots();
+  for (let i = start; i <= end; i++) addBtn(i);
+  if (end < totalPages - 1) addDots();
+  if (totalPages > 1) addBtn(totalPages);
 }
 
 /*****************************************************************************

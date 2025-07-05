@@ -13,14 +13,15 @@
 			box-sizing: border-box
 		}
 
-                body {
+body {
                         background: #1a1a1a;
                         color: #fff;
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                         min-height: 100vh;
                         padding: 20px;
                         font-size: .95rem;
-                        overflow-y: auto
+                        overflow-y: auto;
+                        overflow-anchor: none
                 }
 
 		/* ===== LAYOUT ===== */
@@ -223,17 +224,74 @@
     display: none
 }
 
-		.manga-card {
-			background: linear-gradient(135deg, #2a2a2a, #252525);
-			border-radius: 8px;
-			padding: 10px;
-			cursor: pointer;
-			border: 2px solid transparent;
-			transition: .2s;
-			display: flex;
-			flex-direction: column;
-			align-items: center
-		}
+.manga-card {
+                        position: relative;
+                        background: linear-gradient(135deg, #2a2a2a, #252525);
+                        border-radius: 8px;
+                        padding: 10px;
+                        cursor: pointer;
+                        border: 2px solid transparent;
+                        transition: .2s;
+                        display: flex;
+                        flex-direction: column;
+  align-items: center
+}
+
+                .download-btn {
+                        position: absolute;
+                        top: 6px;
+                        right: 6px;
+                        background: rgba(74, 158, 255, .8);
+                        border: none;
+                        color: #fff;
+                        border-radius: 4px;
+                        font-size: .75rem;
+                        padding: 2px 5px;
+                        cursor: pointer;
+                        display: none;
+                        opacity: .75;
+                        transition: opacity .2s
+                }
+
+                .manga-card:hover .download-btn {
+                        display: block;
+                        opacity: 1
+                }
+
+.manga-grid.compact .download-btn {
+                        display: none !important
+                }
+
+                .download-menu {
+                        position: absolute;
+                        top: 28px;
+                        right: 6px;
+                        background: rgba(42, 42, 42, .95);
+                        border: 1px solid #555;
+                        border-radius: 4px;
+                        padding: 4px 0;
+                        display: none;
+                        flex-direction: column;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, .4);
+                        backdrop-filter: blur(4px);
+                        z-index: 50
+                }
+
+                .download-menu button {
+                        background: transparent;
+                        color: #fff;
+                        border: none;
+                        padding: 4px 12px;
+                        font-size: .75rem;
+                        text-align: left;
+                        cursor: pointer;
+                        white-space: nowrap
+                }
+
+                .download-menu button:hover {
+                        background: #4a9eff;
+                        color: #fff
+                }
 
 		.manga-card:hover {
 			transform: translateY(-4px);
@@ -241,11 +299,11 @@
 			box-shadow: 0 5px 16px rgba(74, 158, 255, .18)
 		}
 
-                .manga-thumb {
+.manga-thumb {
                         width: 100%;
-                        height: auto;
-                        max-height: 220px;
-                        object-fit: contain;
+                        height: 220px;
+                        object-fit: cover;
+                        object-position: top;
                         border-radius: 5px;
                         margin-bottom: 6px;
                         background: #222;
@@ -559,22 +617,62 @@
 		}
 
 		/* ===== RESPONSIVE ===== */
-                @media(max-width:768px) {
-                        .manga-grid {
-                                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                                gap: 8px
-                        }
+@media(max-width:768px) {
+        .manga-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 8px
+        }
 
 			.manga-number {
 				font-size: 1.25rem
 			}
 
-                        .nav-button {
-                                width: 48px;
-                                height: 82px;
-                                font-size: 1.5rem
-                        }
-                }
+        .nav-button {
+                width: 48px;
+                height: 82px;
+                font-size: 1.5rem
+        }
+}
+
+@media(max-width:480px) {
+        body {
+                padding: 12px;
+                font-size: .85rem
+        }
+
+        .search-container {
+                top: 8px;
+                padding: 6px 8px
+        }
+
+        .search-hint {
+                display: none
+        }
+
+        .manga-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))
+        }
+
+        .header h1 {
+                font-size: 1.6rem
+        }
+
+        .nav-button {
+                width: 40px;
+                height: 70px;
+                font-size: 1.25rem
+        }
+
+        .controls {
+                gap: 12px
+        }
+}
+
+@media (pointer: coarse) {
+        .nav-button {
+                display: none
+        }
+}
 
                 /* ===== PAGINATION ===== */
                 .pagination {
