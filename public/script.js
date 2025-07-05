@@ -10,6 +10,7 @@ const PAGE_SIZE = 30;                    // cards per batch
 
 let previewsOn  = true;
 let libraryPage = 1;
+let scrollAfterGrid = false;
 let libraryScrollY = 0;
 let mangaData   = [];                    // full list from server
 let filteredManga = [];                  // after search/filter
@@ -65,7 +66,7 @@ function setupUI() {
     );
 
   document.querySelector(".header h1").addEventListener("click", () => {
-    location.reload();
+    location.href = "/";
   });
 
   document.getElementById("normalView").onclick  = () => setCompact(false);
@@ -297,6 +298,11 @@ function renderGrid() {
   updateLibraryURL();
 
   updateCounts();
+
+  if (scrollAfterGrid) {
+    scrollAfterGrid = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 function createCard(m) {
@@ -424,10 +430,8 @@ function updatePagination() {
     b.className = "page-btn" + (i === libraryPage ? " active" : "");
     b.onclick = () => {
       libraryPage = i;
+      scrollAfterGrid = true;
       renderGrid();
-      requestAnimationFrame(() =>
-        window.scrollTo({ top: 0, behavior: "smooth" })
-      );
     };
     container.appendChild(b);
   };
