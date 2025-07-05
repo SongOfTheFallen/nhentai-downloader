@@ -17,7 +17,7 @@ if(!APP_PASSWORD) {
   console.log("No APP_PASSWORD set. Add it in a .env file to enable login.");
 }
 
-const PORT = process.env.PORT ?? 8080;
+const PORT = process.env.PORT ?? 8787;
 const MANGA_DIR = path.resolve("manga"); // folder with 1/, 2/, …
 const SUPPORTED = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const TEMP_DIR = path.join(os.tmpdir(), "nhentai-tmp");
@@ -195,7 +195,7 @@ function gracefulExit() {
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
-app.listen(PORT, () =>
+app.listen(PORT, '0.0.0.0', () =>
   console.log(`🚀  http://localhost:${PORT}  (cache ${mangaCache.length})`)
 );
 
