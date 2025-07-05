@@ -18,6 +18,7 @@ let currentManga = null;
 let currentPage  = 1;
 let maxPage      = 1;
 let libraryLoaded = false;
+let pendingRoute = null;
 
 /*****************************************************************************
  * INIT                                                                      *
@@ -27,10 +28,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   const p = parseInt(params.get("p") || "1", 10);
   if (!Number.isNaN(p) && p > 0) libraryPage = p;
 
+  handleRoute();                         // record route before data load
   setupUI();
   await loadLibrary();                   // first load
   libraryLoaded = true;
-  handleRoute();
+  handleRoute();                         // apply pending route
   window.addEventListener("popstate", handleRoute);
 });
 
@@ -183,11 +185,19 @@ function cmp(val, op, target) {
 }
 
 function handleRoute() {
-  if (!libraryLoaded) return;
   const match = location.pathname.match(/^\/(\d+)(?:\/(\d+))?$/);
-  if (match) {
-    const num  = parseInt(match[1], 10);
-    const page = match[2] ? parseInt(match[2], 10) : 1;
+
+  if (!libraryLoaded) {
+    pendingRoute = match;
+    return;
+  }
+
+  const route = match || pendingRoute;
+  pendingRoute = null;
+
+  if (route) {
+    const num  = parseInt(route[1], 10);
+    const page = route[2] ? parseInt(route[2], 10) : 1;
     openManga(num, page, false);
   } else {
     backToLibrary(false);
