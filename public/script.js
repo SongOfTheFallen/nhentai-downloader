@@ -92,6 +92,19 @@ function setupUI() {
     (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
   });
 
+  let startX = null;
+  rc.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) startX = e.touches[0].clientX;
+  });
+  rc.addEventListener("touchend", e => {
+    if (startX === null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) {
+      dx < 0 ? nextPage() : previousPage();
+    }
+    startX = null;
+  });
+
   document.querySelector(".top-controls").addEventListener("click", e => e.stopPropagation());
   document.querySelectorAll(".fullscreen-btn, .back-button").forEach(btn =>
     btn.addEventListener("click", e => e.stopPropagation())

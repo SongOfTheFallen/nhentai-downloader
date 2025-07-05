@@ -617,22 +617,56 @@ body {
 		}
 
 		/* ===== RESPONSIVE ===== */
-                @media(max-width:768px) {
-                        .manga-grid {
-                                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                                gap: 8px
-                        }
+@media(max-width:768px) {
+        .manga-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 8px
+        }
 
 			.manga-number {
 				font-size: 1.25rem
 			}
 
-                        .nav-button {
-                                width: 48px;
-                                height: 82px;
-                                font-size: 1.5rem
-                        }
-                }
+        .nav-button {
+                width: 48px;
+                height: 82px;
+                font-size: 1.5rem
+        }
+}
+
+@media(max-width:480px) {
+        body {
+                padding: 12px;
+                font-size: .85rem
+        }
+
+        .search-container {
+                top: 8px;
+                padding: 6px 8px
+        }
+
+        .search-hint {
+                display: none
+        }
+
+        .manga-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))
+        }
+
+        .header h1 {
+                font-size: 1.6rem
+        }
+
+        .nav-button {
+                width: 40px;
+                height: 70px;
+                font-size: 1.25rem
+        }
+
+        .controls {
+                gap: 12px
+        }
+}
 
                 /* ===== PAGINATION ===== */
                 .pagination {
