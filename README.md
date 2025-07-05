@@ -15,6 +15,7 @@ A tool to download and read nhentai doujinshi locally, featuring an intuitive an
 
 * Downloads manga/doujinshi from [nhentai.net](https://nhentai.net).
 * Provides a convenient and responsive local web UI.
+* Downloading feature in PDF and compressed archive.
 
 ## Installation and Usage
 
