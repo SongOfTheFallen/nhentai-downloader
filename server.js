@@ -7,15 +7,21 @@ import path from "path";
 import { fileURLToPath } from "url";
 import archiver from "archiver";
 import PDFDocument from "pdfkit";
+import dotenv from "dotenv";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+dotenv.config();
+const APP_PASSWORD = process.env.APP_PASSWORD;
+if(!APP_PASSWORD) {
+  console.log("No APP_PASSWORD set. Add it in a .env file to enable login.");
+}
+
 const PORT = process.env.PORT ?? 8080;
 const MANGA_DIR = path.resolve("manga"); // folder with 1/, 2/, …
-const AUTH_USER = process.env.AUTH_USER ?? "folly";
-const AUTH_PASS = process.env.AUTH_PASS ?? "shenanigans";
 const SUPPORTED = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const TEMP_DIR = path.join(os.tmpdir(), "nhentai-tmp");
+const PROTECT = !!APP_PASSWORD;
 
 async function cleanTempDir() {
   try {
@@ -40,19 +46,29 @@ async function findPage(num, page) {
 
 
 const app = express();
-
-app.use((req, res, next) => {
-  const hdr = req.headers.authorization || "";
-  if (hdr.startsWith("Basic ")) {
-    const b64 = hdr.slice(6);
-    const [user, pass] = Buffer.from(b64, "base64").toString().split(":");
-    if (user === AUTH_USER && pass === AUTH_PASS) return next();
+if (PROTECT) {
+  app.use(express.urlencoded({ extended: false }));
+  function parseCookies(c) {
+    return Object.fromEntries((c || "").split(/; */).filter(Boolean).map(s => s.split("=").map(decodeURIComponent)));
   }
-  res.setHeader("WWW-Authenticate", "Basic realm=\"nhentai\"");
-  res.status(401).end("Authentication required");
-});
+  app.post("/login", (req, res) => {
+    if (req.body.password === APP_PASSWORD) {
+      res.cookie("auth", "1", { httpOnly: true });
+      return res.redirect("/");
+    }
+    res.sendFile(path.join(__dirname, "public", "login.html"));
+  });
+  app.use((req, res, next) => {
+    if (["/login", "/login.html", "/login.css"].includes(req.path)) return next();
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies.auth === "1") return next();
+    res.sendFile(path.join(__dirname, "public", "login.html"));
+  });
+} else {
+  console.log("Password protection disabled");
+}
 
-app.use(express.static("public", { maxAge: 0 })); // serve html/css/js without caching
+app.use(express.static("public", { maxAge: 0 }));
 app.use('/assets', express.static('assets'));
 app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" })); // serve images
 
