@@ -18,6 +18,7 @@ if(!APP_PASSWORD) {
 }
 
 const PORT = process.env.PORT ?? 8787;
+const PUBLIC_DIR = path.join(__dirname, "public");
 const MANGA_DIR = path.resolve("manga"); // folder with 1/, 2/, …
 const SUPPORTED = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const TEMP_DIR = path.join(os.tmpdir(), "nhentai-tmp");
@@ -53,7 +54,7 @@ if (PROTECT) {
   }
   app.get("/login", (req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.sendFile(path.join(__dirname, "public", "login.html"));
+    res.sendFile(path.join(PUBLIC_DIR, "login.html"));
   });
   app.post("/login", (req, res) => {
     if (req.body.password === APP_PASSWORD) {
@@ -62,7 +63,7 @@ if (PROTECT) {
       return res.redirect(dest);
     }
     res.setHeader("Cache-Control", "no-store");
-    res.sendFile(path.join(__dirname, "public", "login.html"));
+    res.sendFile(path.join(PUBLIC_DIR, "login.html"));
   });
   app.use((req, res, next) => {
     if (["/login", "/login.html", "/login.css"].includes(req.path)) return next();
@@ -75,7 +76,7 @@ if (PROTECT) {
   console.log("Password protection disabled");
 }
 
-app.use(express.static("public", { maxAge: 0 }));
+app.use(express.static(PUBLIC_DIR, { maxAge: 0 }));
 app.use('/assets', express.static('assets'));
 app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" })); // serve images
 
@@ -181,11 +182,11 @@ app.get("/api/manga/:num/pdf", async (req, res) => {
 
 // Serve index.html for direct links like /123 or /123/1
 app.get(/^\/(\d+)(?:\/(\d+))?\/?$/, (_req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 // Catch-all 404 page
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+  res.status(404).sendFile(path.join(PUBLIC_DIR, "404.html"));
 });
 
 // -------- Start --------------------------------------------------------------

@@ -22,25 +22,27 @@ A tool to download and read nhentai doujinshi locally, featuring an intuitive an
 1. Install the required dependencies:
 
    ```bash
+   npm install
    pip install httpx beautifulsoup4 lxml
    ```
 
-2. Run the downloader script:
+2. Download doujinshi using the Python script:
 
    ```bash
    python main.py
    ```
 
-3. Serve the downloaded content locally:
+3. Start the local server:
 
    ```bash
-   python -m http.server 8000
+   APP_PASSWORD=secret node server.js
    ```
 
-   Ensure you execute this command within the `sauces` directory.
+   The server listens on `http://localhost:8787` by default. Set the `PORT`
+   environment variable to use a different port.
 
 4. Access the application:
-   Visit [https://127.0.0.1:8000](https://127.0.0.1:8000) in your web browser.
+   Visit [http://localhost:8787](http://localhost:8787) in your web browser.
 
 ## Compatibility
 
