@@ -147,6 +147,7 @@ async function loadLibrary(rescan = false) {
   try {
     if (rescan) await fetch(API_RESCAN, { method : "POST" });        // optional
     const res = await fetch(API_LIST, { cache : "no-store" });
+    if (!res.ok) throw new Error(`status ${res.status}`);
     mangaData     = await res.json();
     filteredManga = [...mangaData];
 
@@ -574,7 +575,7 @@ function backToLibrary(pushHistory = true) {
   currentManga = null;
   currentPage  = 1;
   window.scrollTo(0, libraryScrollY);
-  if (pushHistory) history.replaceState({}, "", "/");
+  if (pushHistory) history.pushState({}, "", "/");
 }
 
 function toggleFullscreen() {
