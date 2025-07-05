@@ -99,9 +99,13 @@ function setupUI() {
   let startX = null;
   rc.addEventListener("touchstart", e => {
     if (e.touches.length === 1) startX = e.touches[0].clientX;
+    else startX = null; // ignore multi-touch (pinch)
+  });
+  rc.addEventListener("touchmove", e => {
+    if (e.touches.length > 1) startX = null;
   });
   rc.addEventListener("touchend", e => {
-    if (startX === null) return;
+    if (startX === null || e.touches.length > 0) return;
     const dx = e.changedTouches[0].clientX - startX;
     if (Math.abs(dx) > 40) {
       dx < 0 ? nextPage() : previousPage();
