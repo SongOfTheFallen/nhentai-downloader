@@ -90,13 +90,11 @@ function setupUI() {
   });
 
   const rc = document.getElementById("readerContainer");
-  if (!window.matchMedia("(pointer: coarse)").matches) {
-    rc.addEventListener("click", e => {
-      if (!document.getElementById("readerView").classList.contains("active")) return;
-      if (e.target.classList?.contains("nav-button") || e.target.closest?.(".top-controls")) return;
-      (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
-    });
-  }
+  rc.addEventListener("click", e => {
+    if (!document.getElementById("readerView").classList.contains("active")) return;
+    if (e.target.classList?.contains("nav-button") || e.target.closest?.(".top-controls")) return;
+    (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
+  });
 
   let startX = null;
   rc.addEventListener("touchstart", e => {
