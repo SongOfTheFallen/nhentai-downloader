@@ -6,7 +6,7 @@ const API_RESCAN = "/api/rescan";  // POST → optional rebuild trigger
 const MANGA_PATH = "/manga";       // static folder that contains pages
 
 const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
-const PAGE_SIZE = 250;                   // cards per batch
+const PAGE_SIZE = 30;                    // cards per batch
 
 let previewsOn  = true;
 let libraryPage = 1;
@@ -86,11 +86,13 @@ function setupUI() {
   });
 
   const rc = document.getElementById("readerContainer");
-  rc.addEventListener("click", e => {
-    if (!document.getElementById("readerView").classList.contains("active")) return;
-    if (e.target.classList?.contains("nav-button") || e.target.closest?.(".top-controls")) return;
-    (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
-  });
+  if (!window.matchMedia("(pointer: coarse)").matches) {
+    rc.addEventListener("click", e => {
+      if (!document.getElementById("readerView").classList.contains("active")) return;
+      if (e.target.classList?.contains("nav-button") || e.target.closest?.(".top-controls")) return;
+      (e.clientX < window.innerWidth / 2 ? previousPage : nextPage)();
+    });
+  }
 
   let startX = null;
   rc.addEventListener("touchstart", e => {
