@@ -22,6 +22,10 @@ let libraryLoaded = false;
  * INIT                                                                      *
  *****************************************************************************/
 window.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(location.search);
+  const p = parseInt(params.get("p") || "1", 10);
+  if (!Number.isNaN(p) && p > 0) libraryPage = p;
+
   setupUI();
   await loadLibrary();                   // first load
   libraryLoaded = true;
@@ -141,7 +145,6 @@ async function loadLibrary(rescan = false) {
     mangaData     = await res.json();
     filteredManga = [...mangaData];
 
-    libraryPage = 1;
     updateStats();
     updateCounts();
     renderGrid();
@@ -426,9 +429,12 @@ function updatePagination() {
     container.appendChild(s);
   };
 
-  const range = 2;
-  const start = Math.max(2, libraryPage - range);
-  const end   = Math.min(totalPages - 1, libraryPage + range);
+  const around = 4; // pages shown around current
+  let start = Math.max(2, libraryPage - around);
+  let end   = Math.min(totalPages - 1, libraryPage + around);
+
+  if (start === 2) end = Math.min(totalPages - 1, start + around * 2);
+  if (end === totalPages - 1) start = Math.max(2, end - around * 2);
 
   addBtn(1);
   if (start > 2) addDots();
