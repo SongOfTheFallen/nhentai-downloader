@@ -425,6 +425,7 @@ function updateCounts() {
 }
 
 function updateLibraryURL() {
+  if (!libraryLoaded || pendingRoute) return;
   const url = libraryPage > 1 ? `/?p=${libraryPage}` : "/";
   history.replaceState({}, "", url);
 }
