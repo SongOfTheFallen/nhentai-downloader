@@ -418,7 +418,11 @@ function updatePagination() {
     const b = document.createElement("button");
     b.textContent = i;
     b.className = "page-btn" + (i === libraryPage ? " active" : "");
-    b.onclick = () => { libraryPage = i; renderGrid(); };
+    b.onclick = () => {
+      libraryPage = i;
+      renderGrid();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
     container.appendChild(b);
   };
   const addDots = () => {
