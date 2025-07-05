@@ -16,9 +16,9 @@
   "license": "ISC",
   "dependencies": {
     "archiver": "^7.0.1",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "pdf-lib": "^1.17.1",
-    "pdfkit": "^0.17.1",
-    "dotenv": "^16.0.0"
+    "pdfkit": "^0.17.1"
   }
 }
