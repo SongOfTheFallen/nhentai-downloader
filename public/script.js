@@ -150,6 +150,17 @@ function parseWords(q) {
   return words;
 }
 
+function cmp(val, op, target) {
+  switch (op) {
+    case '<':  return val < target;
+    case '<=': return val <= target;
+    case '>':  return val > target;
+    case '>=': return val >= target;
+    case '=':  return val === target;
+    default:   return false;
+  }
+}
+
 function handleRoute() {
   if (!libraryLoaded) return;
   const match = location.pathname.match(/^\/(\d+)(?:\/(\d+))?$/);
@@ -167,12 +178,27 @@ function handleRoute() {
  *****************************************************************************/
 function filterLibrary(q) {
   q = q.trim();
-  if (!q) filteredManga = [...mangaData];
-  else if (q.startsWith("#")) {
-    const n = q.slice(1);
+
+  let sortField = null;
+  let sortDir   = 1;
+
+  const tokens  = q ? parseWords(q) : [];
+  const words   = [];
+  for (const t of tokens) {
+    const s = t.match(/^sort:([-]?)(id|pages|age)$/);
+    if (s) {
+      sortField = s[2];
+      sortDir   = s[1] === '-' ? -1 : 1;
+    } else {
+      words.push(t);
+    }
+  }
+
+  if (!words.length) filteredManga = [...mangaData];
+  else if (words[0] && words[0].startsWith("#") && words.length === 1) {
+    const n = words[0].slice(1);
     filteredManga = mangaData.filter(m => String(m.number).includes(n));
   } else {
-    const words = parseWords(q);
     filteredManga = mangaData.filter(m => {
       const tagset = [
         ...(m.tags || []),
@@ -183,9 +209,38 @@ function filterLibrary(q) {
         ...(m.languages || []),
         ...(m.categories || []),
       ].map(t => t.name.toLowerCase());
-      return words.every(w => tagset.some(t => t.includes(w)));
+
+      const time = m.datetime_iso8601 ? new Date(m.datetime_iso8601).getTime() : 0;
+
+      return words.every(w => {
+        let m1;
+        if ((m1 = w.match(/^([<>]=?|=)(\d+)$/))) {
+          const [, op, val] = m1;
+          return cmp(m.pages, op, +val);
+        }
+        if ((m1 = w.match(/^time=([0-9-]+)\.\.([0-9-]+)$/))) {
+          const [, from, to] = m1;
+          const f = new Date(from).getTime();
+          const t = new Date(to).getTime();
+          return time >= f && time <= t;
+        }
+        if ((m1 = w.match(/^time([<>]=?|=)([0-9-]+)$/))) {
+          const [, op, date] = m1;
+          return cmp(time, op, new Date(date).getTime());
+        }
+        return tagset.some(t => t.includes(w));
+      });
     });
   }
+  if (sortField) {
+    const getter = {
+      id:    m => m.number,
+      pages: m => m.pages,
+      age:   m => m.datetime_iso8601 ? new Date(m.datetime_iso8601).getTime() : 0,
+    }[sortField];
+    filteredManga.sort((a, b) => sortDir * (getter(a) - getter(b)));
+  }
+
   libraryPage = 1;
   updateCounts();
   renderGrid();
@@ -243,9 +298,52 @@ function createCard(m) {
        ${tags.map(t => `<span class="tag ${t.tType}">${t.name}</span>`).join("")}
      </div>`;
 
+  const dlBtn  = document.createElement('button');
+  dlBtn.className = 'download-btn';
+  dlBtn.textContent = '↓';
+  dlBtn.title = 'Download';
+
+  const menu = document.createElement('div');
+  menu.className = 'download-menu';
+  menu.innerHTML = '<button data-type="archive">Archive</button><button data-type="pdf">PDF</button>';
+
+  dlBtn.onclick = e => {
+    e.stopPropagation();
+    closeAllMenus();
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+  };
+
+  menu.onclick = e => {
+    e.stopPropagation();
+    const type = e.target.dataset.type;
+    if (!type) return;
+    downloadManga(m.number, type);
+    menu.style.display = 'none';
+  };
+
+  card.appendChild(dlBtn);
+  card.appendChild(menu);
+
   if (previewsOn) thumbObserver.observe(card.querySelector(".manga-thumb"));
   return card;
 }
+
+function downloadManga(num, type) {
+  const link = document.createElement('a');
+  link.href = `/api/manga/${num}/${type}`;
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function closeAllMenus() {
+  document.querySelectorAll('.download-menu').forEach(m => {
+    m.style.display = 'none';
+  });
+}
+
+document.addEventListener('click', closeAllMenus);
 
 function loadThumb(img) {
   if (img.dataset.loaded) return;
