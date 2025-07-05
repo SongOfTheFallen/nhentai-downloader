@@ -185,6 +185,10 @@ function handleRoute() {
     openManga(num, page, false);
   } else {
     backToLibrary(false);
+    const params = new URLSearchParams(location.search);
+    const p = parseInt(params.get("p") || "1", 10);
+    libraryPage = !Number.isNaN(p) && p > 0 ? p : 1;
+    renderGrid();
   }
 }
 
@@ -272,6 +276,7 @@ function renderGrid() {
     grid.innerHTML = "";
     empty.style.display = "block";
     document.getElementById("pagination").innerHTML = "";
+    updateLibraryURL();
     return;
   }
   empty.style.display = "none";
@@ -283,6 +288,8 @@ function renderGrid() {
   grid.appendChild(frag);
 
   updatePagination();
+
+  updateLibraryURL();
 
   updateCounts();
 }
@@ -396,31 +403,38 @@ function updateCounts() {
     `${start}-${end} / ${filteredManga.length}`;
 }
 
+function updateLibraryURL() {
+  const url = libraryPage > 1 ? `/?p=${libraryPage}` : "/";
+  history.replaceState({}, "", url);
+}
+
 function updatePagination() {
   const totalPages = Math.ceil(filteredManga.length / PAGE_SIZE);
   const container = document.getElementById("pagination");
   container.innerHTML = "";
   if (totalPages <= 1) return;
+  const addBtn = i => {
+    const b = document.createElement("button");
+    b.textContent = i;
+    b.className = "page-btn" + (i === libraryPage ? " active" : "");
+    b.onclick = () => { libraryPage = i; renderGrid(); };
+    container.appendChild(b);
+  };
+  const addDots = () => {
+    const s = document.createElement("span");
+    s.textContent = "...";
+    container.appendChild(s);
+  };
 
-  for (let i = 1; i <= Math.min(totalPages, 10); i++) {
-    const btn = document.createElement("button");
-    btn.textContent = i;
-    btn.className = "page-btn" + (i === libraryPage ? " active" : "");
-    btn.onclick = () => { libraryPage = i; renderGrid(); };
-    container.appendChild(btn);
-  }
+  const range = 2;
+  const start = Math.max(2, libraryPage - range);
+  const end   = Math.min(totalPages - 1, libraryPage + range);
 
-  if (totalPages > 10) {
-    const dots = document.createElement("span");
-    dots.textContent = "...";
-    container.appendChild(dots);
-
-    const last = document.createElement("button");
-    last.textContent = totalPages;
-    last.className = "page-btn" + (libraryPage === totalPages ? " active" : "");
-    last.onclick = () => { libraryPage = totalPages; renderGrid(); };
-    container.appendChild(last);
-  }
+  addBtn(1);
+  if (start > 2) addDots();
+  for (let i = start; i <= end; i++) addBtn(i);
+  if (end < totalPages - 1) addDots();
+  if (totalPages > 1) addBtn(totalPages);
 }
 
 /*****************************************************************************

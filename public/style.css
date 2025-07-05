@@ -668,6 +668,12 @@ body {
         }
 }
 
+@media (pointer: coarse) {
+        .nav-button {
+                display: none
+        }
+}
+
                 /* ===== PAGINATION ===== */
                 .pagination {
                         margin: 16px 0;
