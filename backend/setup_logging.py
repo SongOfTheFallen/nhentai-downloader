@@ -30,7 +30,7 @@ def init() -> logging.Logger:
     logger = logging.getLogger(
         "scraper"
     )  # or use a specific name like logging.getLogger('myapp')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
     # Prevent adding duplicate handlers if function is called multiple times

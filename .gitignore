@@ -592,3 +592,7 @@ DELME.sh
 export_clean/
 
 project.zip
+
+backend/manga/*
+
+data/

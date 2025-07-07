@@ -20,8 +20,12 @@ log: logging.Logger = setup_logging.init()
 async def main() -> None:
     log.debug("nhentai scraper started!")
 
-    async with Scraper("./data/") as s:
-        res = await s.scrape_single(56)
+    async with Scraper("./manga/", max_coroutines=3) as s:
+        # res = await s.scrape_single(56)
+        # log.info(f"Downloaded single doujin, response is: {res}")
+
+        await s.scrape_multiple(range(1, 100_000 + 1))
+        #await s.scrape_multiple([1])
 
 
 if __name__ == "__main__":
