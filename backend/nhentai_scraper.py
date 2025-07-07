@@ -7,28 +7,18 @@ Author: Urpagin
 Date: 2025-07-05
 """
 
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
-# TODO: DEDUPLICATE _DOWNLOAD AND _FETCH. USE _FETCH IN _DOWNLOAD.
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
+# TODO: MAKE MANGA STORE HOSTABLE ELSEWHERE
 
 
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-# TODO: ADD GLOBAL DELAY TO ALL REQUESTS PASSED IN __INIT__
-
-
+from os import name
+import time
 import random
 from typing import Generator, Iterator
 from pathlib import Path
@@ -135,17 +125,52 @@ def image_link_generator(previous_image_url: str) -> Generator[str, None, None]:
         yield urlunparse(new_parsed)
 
 
+class RateLimiter:
+    def __init__(self, max_calls_per_second: float | None):
+        if not max_calls_per_second or max_calls_per_second <= 0:
+            log.info(
+                f"Rate limiter disabled. Rate limiting: infinite requests per second"
+            )
+            self._disabled = True
+            return
+        else:
+            self._disabled = False
+
+        self._interval = 1.0 / max_calls_per_second
+        self._lock = asyncio.Lock()
+        self._last = 0.0
+
+    async def acquire(self):
+        # No-op if disabled
+        if self._disabled:
+            return
+
+        async with self._lock:
+            now: float = time.monotonic()
+            wait_time: float = self._interval - (now - self._last)
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+            self._last = time.monotonic()
+
+
 class Scraper:
     def __init__(
         self,
         save_dir: str,
-        max_coroutines: int = 10,
+        max_coroutines: int = 3,
+        max_reqs_per_second: float | None = 3.0,
         user_agents_filepath: str | None = None,
+        timeout: int = 20,
     ) -> None:
         """
         :param save_dir: Where the downloaded doujinshis be saved.
-        :param max_coroutimes: Limits the numbers of asynchronous downloads.
+        :param max_coroutines: Limits the numbers of asynchronous downloads. "I will allow at most X requests at once"
+        :param max_reqs_per_second: Limits the number of HTTP requests per second. "I will allow no more than X requests per second."
         :param user_agents_filepath: The path pointing to a text file, each line with a user agent.
+        :param timeout: The timeout in seconds for ALL requests sent in the program's lifetime.
+
+
+        To disable the rate limiter, pass ``None`` for `max_reqs_per_second`.
         """
         try:
             _save_dir: Path = Path(save_dir)
@@ -162,12 +187,19 @@ class Scraper:
 
         self._max_coroutines = max_coroutines
         self._semaphore: asyncio.Semaphore = asyncio.Semaphore(max_coroutines)
+        self._rate_limiter: RateLimiter = RateLimiter(max_reqs_per_second)
 
         self._BASE_URL: str = "https://nhentai.net/g/"
         self._session: None | aiohttp.ClientSession = None
 
         self._user_agents: list[str] = list()
         self._load_user_agents(user_agents_filepath)
+
+        if timeout < 1:
+            log.warning("Timeout invalid, defauling to 10s")
+            self._timeout = 10
+        else:
+            self._timeout = timeout
 
     async def __aenter__(self):
         self._session = aiohttp.ClientSession()
@@ -210,24 +242,44 @@ class Scraper:
             log.warning(f"Failed to load user agents file: {e}")
 
     def _get_user_agent(self) -> str:
-
+        if not self._user_agents:
+            return "Mozilla/5.0 (Windows NT 6.0; Win64; x64; en-US) AppleWebKit/603.19 (KHTML, like Gecko) Chrome/50.0.2331.247 Safari/601"
         return random.choice(self._user_agents)
 
-    async def _fetch(self, url: str) -> bytes | None:
+    async def _fetch(self, url: str, retries: int = 3) -> tuple[bytes, int] | None:
         if not self._session:
             log.error(f"Session does not exist; cannot fetch url {url}")
             return
 
-        try:
-            async with self._semaphore:
-                timeout = aiohttp.ClientTimeout(total=10)
-                headers = {"User-Agent": self._get_user_agent()}
-                async with self._session.get(
-                    url, timeout=timeout, headers=headers
-                ) as res:
-                    return await res.read()
-        except Exception as e:
-            log.warning(f"Error while fetching URL {url}: {e}")
+        for attempt in range(1, retries + 1):
+            await self._rate_limiter.acquire()
+            try:
+                async with self._semaphore:
+                    timeout = aiohttp.ClientTimeout(total=self._timeout)
+                    headers = {"User-Agent": self._get_user_agent()}
+
+                    async with self._session.get(
+                        url, timeout=timeout, headers=headers
+                    ) as res:
+                        if res.status == 429:
+                            retry_after = res.headers.get("Retry-After")
+                            delay: float = (
+                                float(retry_after) if retry_after else 2**attempt
+                            )
+                            log.warning(
+                                f"429 Too Many Requests. Retrying in {delay:.1f}s..."
+                            )
+                            await asyncio.sleep(delay)
+                            continue  # retry
+                        return await res.read(), res.status
+
+            except Exception as e:
+                log.warning(
+                    f"Error while fetching URL {url} (attempt {attempt}/{retries}): {e}"
+                )
+
+        log.error(f"Failed to fetch URL after {retries} attempts: {url}")
+        return None
 
     def _save_doujin_json(
         self, doujin_dir: Path, content: dict[Any, Any], filename: str = "meta.json"
@@ -290,24 +342,22 @@ class Scraper:
                 log.warning(f"No filename found for image at: {url}")
                 return False
 
-            timeout_cfg = aiohttp.ClientTimeout(total=timeout)
+            res: tuple[bytes, int] | None = await self._fetch(url)
+            if not res:
+                log.debug(f"Fetch failed for {url}.")
+                return False
 
-            headers = {"User-Agent": self._get_user_agent()}
-            async with self._session.get(
-                url, timeout=timeout_cfg, headers=headers
-            ) as response:
-                if not self._is_req_success(response.status):
-                    log.warning(f"HTTP {response.status} for {url}")
-                    return False
+            content, status = res
+            if not self._is_req_success(status):
+                log.warning(f"HTTP {status} for {url}")
+                return False
 
-                content: bytes = await response.read()
+            # Create directory and save file
+            file_path: Path = save_dir / filename
+            file_path.write_bytes(content)
 
-                # Create directory and save file
-                file_path: Path = save_dir / filename
-                file_path.write_bytes(content)
-
-                log.debug(f"Downloaded {url} -> {file_path}")
-                return True
+            log.debug(f"Downloaded {url} -> {file_path}")
+            return True
 
         except asyncio.TimeoutError:
             log.error(f"Timeout downloading {url}")
@@ -318,6 +368,75 @@ class Scraper:
         except Exception as e:
             log.error(f"Unexpected error downloading {url}: {e}")
             return False
+
+    async def _fast_download_images_i_love_gambling(
+        self, doujin_dir: Path, start_url: str, page_count: int
+    ) -> tuple[int, int]:
+        """
+        The thick of it. Downloads all the doujin's images into `doujin_dir`.
+        :param doujin_dir: Where to save the images
+        :param start_url: The URL of the first image to download.
+        :param page_count: The threshold at which to trying to download images.
+
+        :returns: A tuple of (number of losses, number of wins) (A win is an image successfully downloaded)
+        """
+        success_count: int = 0
+
+        fail_count: int = 0
+        # Stop after `fail_limit` bad URLs
+        fail_limit: int = 3
+
+        # Download the initial image
+        if not await self._download_image(doujin_dir, start_url):
+            return fail_count, success_count
+
+        success_count += 1
+        log.debug(
+            f"Downloaded image {success_count:03}/{page_count:03} for doujin #{doujin_dir.name}"
+        )
+
+        url_gambles = []
+        # Cycle through all image IDs. Minus the first one.
+        # We assume (the gamble) that ALL the images have the same extension. (except the first one as we downloaded it)
+        for _ in range(page_count - 1):
+            try:
+                start_url = next(image_link_generator(start_url))
+            except StopIteration:
+                log.warning("Generator produced no URL. Aborting fast gamble.")
+                return fail_count, success_count
+
+            url_gambles.append(start_url)
+
+        tasks = [
+            asyncio.create_task(self._download_image(doujin_dir, url))
+            for url in url_gambles
+        ]
+        for coro in asyncio.as_completed(tasks):
+            try:
+                if not await coro:
+                    fail_count += 1
+                    log.warning(
+                        f"Doujin #{doujin_dir.name}: gamble for image {success_count:03}/{page_count:03}"
+                    )
+                else:
+                    success_count += 1
+                    log.debug(
+                        f"Downloaded image {success_count:03}/{page_count:03} for doujin #{doujin_dir.name}"
+                    )
+            except Exception as e:
+                log.warning(f"Exception caught doing GAMBLING!!: {e}")
+
+            if fail_count >= fail_limit:
+                log.warning(
+                    f"Gambling failed! ({fail_count} gambles failed!) Cancelling remaining tasks."
+                )
+                for t in tasks:
+                    t.cancel()
+                break
+
+        # Make sure all tasks are awaited, to cancel all of them if needed.
+        await asyncio.gather(*tasks, return_exceptions=True)
+        return fail_count, success_count
 
     async def _download_images(
         self, doujin_dir: Path, start_url: str, page_count: int
@@ -330,6 +449,18 @@ class Scraper:
 
         :returns: A boolean, whether there was any error during the downloads.
         """
+
+        # the number of losses to let through.
+        acceptable_losses: int = 0
+        losses, wins = await self._fast_download_images_i_love_gambling(
+            doujin_dir, start_url, page_count
+        )
+        if losses <= acceptable_losses:
+            return True
+
+        log.warning(
+            f"Gambling failed: {losses} losses out of {page_count - 1} gambled pages. Retrying safely."
+        )
 
         error_happened: bool = False
         downloaded_pages: int = 0
@@ -349,18 +480,22 @@ class Scraper:
                 success: bool = await self._download_image(doujin_dir, candidate_next)
                 # Next URL becomes previous URL for the outer loop.
                 # In any case we change that.
+                previous_ext: str = candidate_next.rsplit(".")[-1]
                 start_url = candidate_next
                 if success:
                     downloaded_pages += 1
                     break
                 else:
+                    log.warning(
+                        f"Doujin #{int(doujin_dir.name):06}: Image {_ + 2:03}/{page_count}, candidate ext {previous_ext} failed."
+                    )
                     error_happened = True
 
             log.debug(
                 f"Downloaded image {downloaded_pages:03}/{page_count:03} for doujin #{doujin_dir.name}"
             )
 
-        return True if not error_happened else False
+        return not error_happened
 
     # TODO: Make a progress bar?
     async def scrape_single(self, id: int) -> Path | None:
@@ -379,11 +514,14 @@ class Scraper:
 
         ###### Req for the tags
         url_cover: str = self._build_doujin_url(id)
-        content: bytes | None = await self._fetch(url_cover)
-        if not content:
+        tags_content: tuple[bytes, int] | None = await self._fetch(url_cover)
+        if not tags_content:
             return
 
-        tags: dict[str, Any] = parsers.parse_tags(content, url_cover)
+        if not self._is_req_success(tags_content[1]):
+            return
+
+        tags: dict[str, Any] = parsers.parse_tags(tags_content[0], url_cover)
         # log.debug(f"{tags = }")
         page_count: int | None = tags.get("pages")
         if not page_count:
@@ -395,11 +533,16 @@ class Scraper:
 
         ###### Req for the first image direct link
         url_first_page: str = self._build_doujin_url_first_page(id)
-        content: bytes | None = await self._fetch(url_first_page)
-        if not content:
+        image_page_content: tuple[bytes, int] | None = await self._fetch(url_first_page)
+        if not image_page_content:
             return
 
-        direct_link_first_image: str | None = parsers.parse_image_direct_link(content)
+        if not self._is_req_success(image_page_content[1]):
+            return
+
+        direct_link_first_image: str | None = parsers.parse_image_direct_link(
+            image_page_content[0]
+        )
         if not direct_link_first_image:
             log.warning(
                 f"Could not parse direct link of first image for url: {url_first_page}"
