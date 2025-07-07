@@ -21,8 +21,7 @@ async def main() -> None:
     log.debug("nhentai scraper started!")
 
     async with Scraper("./data/") as s:
-        res = await s.scrape_single(10)
-        log.debug(f"{res = }")
+        res = await s.scrape_single(56)
 
 
 if __name__ == "__main__":

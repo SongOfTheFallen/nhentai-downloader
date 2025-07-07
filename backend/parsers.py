@@ -1,6 +1,7 @@
 import json
 
 from enum import Enum
+from datetime import date, datetime, timezone
 
 from os import initgroups
 from typing import Any, Generator, Iterator, Never
@@ -25,8 +26,12 @@ def parse_tags(content: bytes, url: str) -> dict[str, Any]:
     Parses the tags from the HTML of the presentation page for a doujin.
     Tags into a dictionary.
     """
+
+    # Current time at which the doujin was scraped.
+    current_datetime = datetime.now(timezone.utc).isoformat()
+    tags = {"pages": None, "url": url, "datetime_scraped_at": current_datetime}
+
     soup = BeautifulSoup(content, "html.parser")
-    tags = {"pages": None, "url": url}
     tags_section = soup.find("section", id="tags")
 
     if tags_section is None:

@@ -7,6 +7,13 @@ Author: Urpagin
 Date: 2025-07-05
 """
 
+from typing import Generator, Iterator
+from pathlib import Path
+from urllib.parse import urlparse, urlunparse
+
+
+from enum import Enum
+import json
 from urllib.parse import urljoin
 import parsers
 from pathlib import Path
@@ -16,7 +23,6 @@ import asyncio
 import aiohttp
 
 log: logging.Logger = logging.getLogger("scraper")
-
 
 
 class Scraper:
@@ -39,7 +45,6 @@ class Scraper:
             )
         self.semaphore = asyncio.Semaphore(max_coroutines)
 
-
         self.BASE_URL: str = "https://nhentai.net/g/"
         self.session: None | aiohttp.ClientSession = None
 
@@ -52,7 +57,6 @@ class Scraper:
             await self.session.close()
         else:
             log.error("Session does not exist at __aexit__()!")
-
 
     def _build_doujin_url(self, id: int) -> str:
         """
@@ -81,7 +85,135 @@ class Scraper:
         except Exception as e:
             log.warning(f"Error while fetching URL {url}: {e}")
 
+    def _save_doujin_json(
+        self, doujin_dir: Path, content: dict[Any, Any], filename: str = "meta.json"
+    ) -> bool:
+        """
+        Saves the information about the doujin inside a JSON file to `save_dir`.
+        The default JSON filename is "meta.json".
+        Returns True if successful, False otherwise.
+        """
+        if not filename.strip() or not doujin_dir:
+            log.warning("Could not save JSON: saving directory or filename empty.")
+            return False
 
+        try:
+            doujin_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            log.warning(f"Could not save JSON: failed to create saving directory: {e}")
+            return False
+
+        json_path = doujin_dir / filename
+        try:
+            with json_path.open("w", encoding="utf-8") as f:
+                json.dump(content, f, indent=2, ensure_ascii=False)
+            return True
+        except Exception as e:
+            log.warning(f"Failed to dump JSON to {json_path}: {e}")
+            return False
+
+    @staticmethod
+    def _is_req_success(status_code: int) -> bool:
+        """Check if HTTP status code indicates success (2xx range)."""
+        return 200 <= status_code < 300
+
+    async def _download_image(
+        self, save_dir: Path, url: str, timeout: int = 30
+    ) -> bool:
+        """
+        Downloads an image from the URL and saves it to `save_dir`.
+
+        Args:
+            save_dir: Directory to save the image
+            url: URL of the image
+            timeout: Request timeout in seconds
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not self.session:
+            log.error("Cannot download image: aiohttp session does not exist")
+            return False
+
+        if timeout < 1:
+            log.warning("The timeout cannot be less than 1")
+            return False
+
+        try:
+            # Extract filename from URL if not provided
+            filename: str = url.split("/")[-1].split("?")[0]  # Remove query params
+            if not filename:
+                log.warning(f"No filename found for image at: {url}")
+                return False
+
+            timeout_cfg = aiohttp.ClientTimeout(total=timeout)
+
+            async with self.session.get(url, timeout=timeout_cfg) as response:
+                if not self._is_req_success(response.status):
+                    log.warning(f"HTTP {response.status} for {url}")
+                    return False
+
+                content: bytes = await response.read()
+
+                # Create directory and save file
+                file_path: Path = save_dir / filename
+                file_path.write_bytes(content)
+
+                log.debug(f"Downloaded {url} -> {file_path}")
+                return True
+
+        except asyncio.TimeoutError:
+            log.error(f"Timeout downloading {url}")
+            return False
+        except aiohttp.ClientError as e:
+            log.error(f"Network error downloading {url}: {e}")
+            return False
+        except Exception as e:
+            log.error(f"Unexpected error downloading {url}: {e}")
+            return False
+
+    async def _download_images(
+        self, doujin_dir: Path, start_url: str, page_count: int
+    ) -> bool:
+        """
+        The thick of it. Downloads all the doujin's images into `doujin_dir`.
+        :param doujin_dir: Where to save the images
+        :param start_url: The URL of the first image to download.
+        :param page_count: The threshold at which to trying to download images.
+
+        :returns: A boolean, whether there was any error during the downloads.
+        """
+
+        error_happened: bool = False
+        downloaded_pages: int = 0
+
+        # Download the initial image
+        if not await self._download_image(doujin_dir, start_url):
+            error_happened = True
+
+        downloaded_pages += 1
+        log.debug(f"Downloaded image {downloaded_pages:03}/{page_count:03} for doujin #{doujin_dir.name}")
+
+        # Cycle through all image IDs. Minus the first one.
+        for _ in range(page_count - 1):
+            for candidate_next in image_link_generator(start_url):
+                success: bool = await self._download_image(doujin_dir, candidate_next)
+                # Next URL becomes previous URL for the outer loop.
+                # In any case we change that.
+                start_url = candidate_next
+                if success:
+                    downloaded_pages += 1
+                    break
+                else:
+                    error_happened = True
+
+            log.debug(f"Downloaded image {downloaded_pages:03}/{page_count:03} for doujin #{doujin_dir.name}")
+
+        return True if not error_happened else False
+
+
+
+    # TODO: Make a progress bar?
     async def scrape_single(self, id: int) -> Path | None:
         """
         Downloads a doujinshi from its ID (sauce).
@@ -89,6 +221,12 @@ class Scraper:
 
         :returns: The path of the directory where the doujinshi has been saved, None if error.
         """
+        log.info(f"Scraping doujinshi #{id:06}")
+
+        doujin_dir: Path = self.save_dir / str(id)
+        if doujin_dir.exists():
+            log.warning(f"Doujin directory {doujin_dir} already exists: skipping")
+            return
 
         ###### Req for the tags
         url_cover: str = self._build_doujin_url(id)
@@ -97,7 +235,14 @@ class Scraper:
             return
 
         tags: dict[str, Any] = parsers.parse_tags(content, url_cover)
-        log.debug(f"{tags = }")
+        #log.debug(f"{tags = }")
+        page_count: int | None = tags.get("pages")
+        if not page_count:
+            log.warning(f"Page count for sauce {id} not found")
+            return
+
+        if not self._save_doujin_json(doujin_dir, tags):
+            return
 
         ###### Req for the first image direct link
         url_first_page: str = self._build_doujin_url_first_page(id)
@@ -107,18 +252,15 @@ class Scraper:
 
         direct_link_first_image: str | None = parsers.parse_image_direct_link(content)
         if not direct_link_first_image:
-            log.warning(f"Could not parse direct link of first image for url: {url_first_page}")
+            log.warning(
+                f"Could not parse direct link of first image for url: {url_first_page}"
+            )
             return
 
         log.debug(f"{direct_link_first_image = }")
-        return
 
-
-        async with aiohttp.ClientSession() as session:
-            res: bytes | None = await self._fetch(session, f"{base_url}{id}/")
-            if not res:
-                return None
-            print(str(res))
+        ###### Reqs to download the images
+        await self._download_images(doujin_dir, direct_link_first_image, page_count)
 
     async def scrape_multiple(
         self, ids: Iterable[int], callback: Callable[[Path | None], None] | None = None
@@ -166,3 +308,90 @@ class Scraper:
         Returns: List of IDs that were downloaded.ins the highest ID and and selects random doujinshis
         """
         pass
+
+
+class ImageExtension(Enum):
+    """
+    Enum representing the different possible image extensions.
+    """
+
+    JPG = 1
+    PNG = 3
+    WEBP = 4
+    JPEG = 2
+    GIF = 5
+    SVG = 6
+    ICO = 7
+    BMP = 8
+    TIFF = 9
+    TIF = 10
+    AVIF = 11
+    HEIC = 12
+    HEIF = 13
+    RAW = 14
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+    @classmethod
+    def from_str(cls, text: str) -> "ImageExtension":
+        for member in cls:
+            if str(member) == text.lower():
+                return member
+        raise ValueError(f"No ImageExtension found for '{text}'")
+
+    @classmethod
+    def iter_starting_from(cls, ext: "ImageExtension") -> Iterator["ImageExtension"]:
+        yield ext
+        yield from (m for m in cls if m != ext)
+
+
+def image_link_generator(previous_image_url: str) -> Generator[str, None, None]:
+    """
+    Sequentially generates URLs to try for the next image page with different extensions.
+    The first extension is always the one of the `previous_image_url` and then cycles through other ones.
+
+    Args:
+        previous_image_url: URL of the previous image (e.g., 'https://example.com/gallery/1.jpg')
+
+    Yields:
+        str: Possible URLs for the next page with different file extensions
+
+    Raises:
+        StopIteration: When page number exceeds page_count or parsing fails
+    """
+
+    # Parse the URL properly
+    parsed = urlparse(previous_image_url)
+    path_parts = parsed.path.split("/")
+
+    # Get filename and split it
+    filename = path_parts[-1]
+    if "." not in filename:
+        log.warning(f"No extension found in URL: {previous_image_url}")
+        return
+
+    name, ext_str = filename.rsplit(".", 1)  # rsplit to handle names with dots
+
+    # Parse page number
+    try:
+        next_page_id = int(name) + 1
+    except ValueError:
+        log.warning(f"Failed to parse page number from: {name}")
+        return
+
+    # Get the extension
+    try:
+        ext_img = ImageExtension.from_str(ext_str)
+    except ValueError:
+        log.debug(f"Unknown extension: {ext_str}")
+        ext_img = ImageExtension.JPG  # Default fallback
+
+    # Generate URLs with different extensions
+    base_path = "/".join(path_parts[:-1])
+
+    for ext in ImageExtension.iter_starting_from(ext_img):
+        # Reconstruct the URL
+        new_path = f"{base_path}/{next_page_id}.{str(ext)}"
+        new_parsed = parsed._replace(path=new_path)
+        yield urlunparse(new_parsed)
