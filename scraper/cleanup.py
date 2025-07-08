@@ -46,7 +46,6 @@ class Cleanup:
         """
         to_delete: list[Path] = list()
         meta_file: Path = Path(doujin_dir) / self._meta_filename
-        print(meta_file)
         # Delete ourselves if no JSON metadata.
         if not meta_file.exists():
             return [doujin_dir]
@@ -56,12 +55,15 @@ class Cleanup:
             return [doujin_dir]
 
         file_count: int = 0
-        for entry in self._doujin_dir.iterdir():
+        for entry in doujin_dir.iterdir():
             # Del all NON-files inside a doujin dir
             if not entry.is_file():
                 to_delete.append(entry)
                 continue
-            file_count += 1
+
+            if entry.name != self._meta_filename:
+                file_count += 1
+
             print(entry)
 
         if file_count != page_count:
@@ -74,18 +76,20 @@ class Cleanup:
         to_delete: set[Path] = set()
 
         for entry in self._doujin_dir.iterdir():
-            # We don't want any non-directories
-            if not entry.is_dir():
-                to_delete.add(entry)
-                continue
-
             try:
                 _ = int(entry.name)
             except ValueError:
                 print(f"{entry} is not a doujin dir")
                 continue
 
-            self._clean_dir(entry)
+            to_delete.update(self._clean_dir(entry))
+
+
+        print("To Delete:")
+        for idx, p in enumerate(to_delete):
+            print(f"{idx + 1:03}. {str(p)}")
+
+        print(f"Total to delete: {len(to_delete)}")
 
 
 
