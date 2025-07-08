@@ -12,7 +12,6 @@ from pathlib import Path
 
 # import requests
 from bs4.element import PageElement
-import httpx
 from itertools import cycle
 from dataclasses import dataclass
 import logging
