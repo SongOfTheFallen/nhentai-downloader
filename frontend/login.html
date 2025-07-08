@@ -14,22 +14,20 @@
 <body>
   <div class="login-container">
     <h1>Manga Library</h1>
-    <form method="post" action="/login">
+    <form id="loginForm">
       <input type="password" name="password" placeholder="Password" required />
       <button type="submit">Enter</button>
     </form>
   </div>
   <script>
     const params = new URLSearchParams(location.search);
-    const redir = params.get('redirect');
-    if (redir) {
-      const f = document.querySelector('form');
-      const h = document.createElement('input');
-      h.type = 'hidden';
-      h.name = 'redirect';
-      h.value = redir;
-      f.appendChild(h);
-    }
+    const redir = params.get('redirect') || '/';
+    document.getElementById('loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const pw = e.target.password.value;
+      localStorage.setItem('apiKey', pw);
+      location.href = redir;
+    });
   </script>
 </body>
 </html>

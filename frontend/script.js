@@ -1,9 +1,11 @@
 /*****************************************************************************
  * CONSTANTS & STATE                                                         *
  *****************************************************************************/
-const API_LIST   = "/api/manga";   // GET  → cached list built by server
-const API_RESCAN = "/api/rescan";  // POST → optional rebuild trigger
-const MANGA_PATH = "/manga";       // static folder that contains pages
+const API_BASE   = window.API_BASE || "";
+const API_KEY    = localStorage.getItem('apiKey') || "";
+const API_LIST   = `${API_BASE}/api/manga`;
+const API_RESCAN = `${API_BASE}/api/rescan`;
+const MANGA_PATH = `${API_BASE}/manga`;
 
 const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const PAGE_SIZE = 30;                    // cards per batch
@@ -145,8 +147,13 @@ function setupUI() {
 async function loadLibrary(rescan = false) {
   showLoader(true);
   try {
-    if (rescan) await fetch(API_RESCAN, { method : "POST" });        // optional
-    const res = await fetch(API_LIST, { cache : "no-store" });
+    if (rescan) await fetch(API_RESCAN, { method : "POST", headers: { 'X-API-Key': API_KEY } });        // optional
+    const res = await fetch(API_LIST, { cache : "no-store", headers: { 'X-API-Key': API_KEY } });
+    if (res.status === 401) {
+      const dest = encodeURIComponent(location.pathname + location.search);
+      location.href = `/login.html?redirect=${dest}`;
+      return;
+    }
     if (!res.ok) throw new Error(`status ${res.status}`);
     mangaData     = await res.json();
     filteredManga = [...mangaData];
@@ -374,7 +381,7 @@ function createCard(m) {
 
 function downloadManga(num, type) {
   const link = document.createElement('a');
-  link.href = `/api/manga/${num}/${type}`;
+  link.href = `${API_BASE}/api/manga/${num}/${type}?key=${encodeURIComponent(API_KEY)}`;
   link.download = '';
   document.body.appendChild(link);
   link.click();
@@ -400,7 +407,7 @@ function loadThumb(img) {
       updateCounts();
       return;
     }
-    img.src = `${MANGA_PATH}/${num}/1.${supportedFormats[idx++]}`;
+    img.src = `${MANGA_PATH}/${num}/1.${supportedFormats[idx++]}?key=${encodeURIComponent(API_KEY)}`;
   };
 
   img.onload  = () => { img.dataset.loaded = true; };
@@ -532,7 +539,7 @@ function loadPage() {
       err.style.display    = "block";
       return;
     }
-    img.src = `${MANGA_PATH}/${currentManga}/${currentPage}.${supportedFormats[idx++]}`;
+    img.src = `${MANGA_PATH}/${currentManga}/${currentPage}.${supportedFormats[idx++]}?key=${encodeURIComponent(API_KEY)}`;
   };
 
   img.onload  = () => { loader.style.display = "none"; err.style.display = "none"; img.classList.add("active"); };

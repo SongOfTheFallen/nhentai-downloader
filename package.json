@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Root package for nhentai-downloader",
   "scripts": {
-    "postinstall": "cd frontend && npm install",
-    "dev": "cd frontend && npm run dev",
-    "prod": "cd frontend && npm run prod",
-    "start": "cd frontend && npm run prod"
+    "postinstall": "cd backend && npm install",
+    "dev": "cd backend && npm run dev",
+    "prod": "cd backend && npm run prod",
+    "start": "cd backend && npm run prod"
   },
   "repository": {
     "type": "git",
