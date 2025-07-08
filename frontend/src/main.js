@@ -3,7 +3,8 @@
  *****************************************************************************/
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
-const API_PASSWORD = import.meta.env.VITE_API_PASSWORD || "changeme";
+const API_PASSWORD  = import.meta.env.VITE_API_PASSWORD  || "changeme";
+const USER_PASSWORD = import.meta.env.VITE_USER_PASSWORD || "";
 const API_LIST   = `${API_BASE}/api/manga`;   // GET  → cached list built by server
 const API_RESCAN = `${API_BASE}/api/rescan`;  // POST → optional rebuild trigger
 const API_STATS  = `${API_BASE}/api/stats`;
@@ -12,6 +13,14 @@ const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const PAGE_SIZE = 30;                    // cards per batch
 function authHeaders() { return { Authorization: `Bearer ${API_PASSWORD}` }; }
 let currentExt = supportedFormats[0];
+
+if (USER_PASSWORD) {
+  const authed = document.cookie.split(';').some(c => c.trim() === 'auth=1');
+  if (!authed) {
+    const dest = encodeURIComponent(location.pathname + location.search + location.hash);
+    location.href = `/login.html?redirect=${dest}`;
+  }
+}
 
 let dirSizeBytes = 0;
 
@@ -22,6 +31,18 @@ function fmt(n, d = 0) {
       maximumFractionDigits: d,
     })
     .replace(/,/g, " ");
+}
+
+function formatSize(bytes) {
+  const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+  let i = 0;
+  let n = bytes;
+  while (i < units.length - 1 && n >= 1024) {
+    n /= 1024;
+    i++;
+  }
+  const d = i === 0 ? 0 : 1;
+  return `${fmt(n, d)} ${units[i]}`;
 }
 
 let previewsOn  = true;
@@ -474,8 +495,7 @@ function updateStats() {
   const el = document.getElementById("statsDisplay");
   if (!mangaData.length) { el.textContent = "No manga loaded"; return; }
   const pages = mangaData.reduce((s, m) => s + m.pages, 0);
-  const mb = dirSizeBytes / (1024 * 1024);
-  el.textContent = `${fmt(mangaData.length)} manga • ${fmt(pages)} pages • ${fmt(mb,1)} MB`;
+  el.textContent = `${fmt(mangaData.length)} manga • ${fmt(pages)} pages • ${formatSize(dirSizeBytes)}`;
 }
 
 function updateCounts() {
