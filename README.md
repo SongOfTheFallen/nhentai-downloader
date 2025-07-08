@@ -19,30 +19,58 @@ A tool to download and read nhentai doujinshi locally, featuring an intuitive an
 
 ## Installation and Usage
 
-1. Install the required dependencies:
+1. Install dependencies for both parts:
 
-   ```bash
-   npm install
-   pip install httpx beautifulsoup4 lxml
-   ```
+```bash
+npm run install:all
+```
 
-2. Download doujinshi using the Python script:
+2. Create environment files:
 
-   ```bash
-   python main.py
-   ```
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
 
-3. Start the local server:
+3. Run development servers:
 
-   ```bash
-   APP_PASSWORD=secret node server.js
-   ```
+```bash
+npm run dev
+```
 
-   The server listens on `http://localhost:8787` by default. Set the `PORT`
-   environment variable to use a different port.
+During development the frontend is served on http://localhost:8787 while the backend API listens on http://localhost:5173.
+The default password is `changeme` and can be changed in `backend/.env`.
+If `VITE_API_PASSWORD` is left empty in the frontend `.env` file, a login
+screen will prompt users for the backend password and store it in the browser.
+Otherwise all requests automatically include the password in an `Authorization`
+header, e.g. `Authorization: Bearer changeme`.
+You may also set `HOST` and `PORT` there to bind the backend to a different address.
+If the backend runs elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
 
-4. Access the application:
-   Visit [http://localhost:8787](http://localhost:8787) in your web browser.
+The endpoint `/api/stats` returns the total number of pages and the size of the manga directory in bytes.
+
+4. Build the frontend for production:
+
+```bash
+npm run build
+```
+
+The `frontend/dist` directory can be deployed to any static host.
+
+## Docker Deployment
+
+Both components can be built as containers using the provided `docker-compose.yml` files located in `backend/` and `frontend/`.
+
+```bash
+# start the API
+cd backend && docker compose up -d
+# build and serve the frontend
+cd ../frontend && docker compose up -d
+```
+
+Environment variables in `.env` files are automatically picked up during build.
+The backend responds to `OPTIONS` requests so the frontend can connect from
+other origins without additional configuration.
 
 ## Compatibility
 
