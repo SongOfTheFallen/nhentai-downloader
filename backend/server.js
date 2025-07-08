@@ -59,7 +59,8 @@ async function findPage(num, page) {
 
 const app = express();
 
-app.options("/*", (req, res) => {
+// Respond to all OPTIONS preflight requests for CORS
+app.options("*", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
