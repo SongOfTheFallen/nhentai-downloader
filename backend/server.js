@@ -59,7 +59,7 @@ async function findPage(num, page) {
 
 const app = express();
 
-app.options("*", (req, res) => {
+app.options("/*", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
