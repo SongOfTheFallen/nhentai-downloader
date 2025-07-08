@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import fs from "fs/promises";
 import { createReadStream, createWriteStream } from "fs";
 import os from "os";
@@ -60,25 +61,14 @@ async function findPage(num, page) {
 const app = express();
 
 // Respond to all OPTIONS preflight requests for CORS
-app.options("*", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Auth-Token"
-  );
-  res.status(204).end();
-});
+app.use(
+  cors({
+    origin: "*",                               // or a specific origin
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Auth-Token"],
+  })
+);
 
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Auth-Token"
-  );
-  next();
-});
 app.use((req,res,next) => {
   const header = req.headers["authorization"] || req.headers["x-auth-token"];
   const token  = header ? String(header).replace(/^Bearer\s+/i, "") : null;

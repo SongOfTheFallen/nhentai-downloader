@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "archiver": "^7.0.1",
+    "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "pdf-lib": "^1.17.1",
