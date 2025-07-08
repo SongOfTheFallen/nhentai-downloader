@@ -6,11 +6,23 @@ const API_BASE =
 const API_PASSWORD = import.meta.env.VITE_API_PASSWORD || "changeme";
 const API_LIST   = `${API_BASE}/api/manga`;   // GET  → cached list built by server
 const API_RESCAN = `${API_BASE}/api/rescan`;  // POST → optional rebuild trigger
+const API_STATS  = `${API_BASE}/api/stats`;
 const MANGA_PATH = `${API_BASE}/manga`;       // static folder that contains pages
 const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const PAGE_SIZE = 30;                    // cards per batch
 function authHeaders() { return { Authorization: `Bearer ${API_PASSWORD}` }; }
 let currentExt = supportedFormats[0];
+
+let dirSizeBytes = 0;
+
+function fmt(n, d = 0) {
+  return Number(n)
+    .toLocaleString("en-US", {
+      minimumFractionDigits: d,
+      maximumFractionDigits: d,
+    })
+    .replace(/,/g, " ");
+}
 
 let previewsOn  = true;
 let libraryPage = 1;
@@ -159,6 +171,14 @@ async function loadLibrary(rescan = false) {
     if (!res.ok) throw new Error(`status ${res.status}`);
     mangaData     = await res.json();
     filteredManga = [...mangaData];
+
+    try {
+      const sres = await fetch(API_STATS, { cache: "no-store", headers: authHeaders() });
+      if (sres.ok) {
+        const stats = await sres.json();
+        dirSizeBytes = stats.dirSizeBytes || 0;
+      }
+    } catch {}
 
     updateStats();
     updateCounts();
@@ -454,14 +474,15 @@ function updateStats() {
   const el = document.getElementById("statsDisplay");
   if (!mangaData.length) { el.textContent = "No manga loaded"; return; }
   const pages = mangaData.reduce((s, m) => s + m.pages, 0);
-  el.textContent = `${mangaData.length} manga • ${pages} pages`;
+  const mb = dirSizeBytes / (1024 * 1024);
+  el.textContent = `${fmt(mangaData.length)} manga • ${fmt(pages)} pages • ${fmt(mb,1)} MB`;
 }
 
 function updateCounts() {
   const start = (libraryPage - 1) * PAGE_SIZE + 1;
   const end   = Math.min(libraryPage * PAGE_SIZE, filteredManga.length);
   document.getElementById("resultsCount").textContent =
-    `${start}-${end} / ${filteredManga.length}`;
+    `${fmt(start)}-${fmt(end)} / ${fmt(filteredManga.length)}`;
 }
 
 function updateLibraryURL() {

@@ -1,0 +1,10 @@
+version: '3'
+services:
+  backend:
+    build: .
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env
+    volumes:
+      - ../manga:/manga

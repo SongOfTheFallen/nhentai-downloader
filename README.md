@@ -45,6 +45,8 @@ e.g. `Authorization: Bearer changeme`.
 You may also set `HOST` and `PORT` there to bind the backend to a different address.
 If the backend runs elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
 
+The endpoint `/api/stats` returns the total number of pages and the size of the manga directory in bytes.
+
 4. Build the frontend for production:
 
 ```bash
@@ -52,6 +54,19 @@ npm run build
 ```
 
 The `frontend/dist` directory can be deployed to any static host.
+
+## Docker Deployment
+
+Both components can be built as containers using the provided `docker-compose.yml` files located in `backend/` and `frontend/`.
+
+```bash
+# start the API
+cd backend && docker compose up -d
+# build and serve the frontend
+cd ../frontend && docker compose up -d
+```
+
+Environment variables in `.env` files are automatically picked up during build.
 
 ## Compatibility
 

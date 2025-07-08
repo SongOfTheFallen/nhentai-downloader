@@ -18,6 +18,26 @@ const MANGA_DIR = path.resolve("../manga");
 const SUPPORTED = ["jpg","jpeg","png","webp","gif","bmp"];
 const TEMP_DIR = path.join(os.tmpdir(), "nhentai-tmp");
 
+let totalPages = 0;
+let dirSizeBytes = 0;
+
+async function getDirSize(dir) {
+  let size = 0;
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const p = path.join(dir, e.name);
+      try {
+        if (e.isDirectory()) size += await getDirSize(p);
+        else size += (await fs.stat(p)).size;
+      } catch (err) {
+        console.warn(`Failed to stat ${p}: ${err.message}`);
+      }
+    }
+  } catch {}
+  return size;
+}
+
 async function cleanTempDir() {
   try {
     await fs.mkdir(TEMP_DIR, { recursive: true });
@@ -78,15 +98,20 @@ async function buildCache() {
     .sort((a, b) => a - b);
 
   const out = [];
+  totalPages = 0;
   for (const n of numbers) {
     try {
       const metaRaw = await fs.readFile(path.join(MANGA_DIR, `${n}/meta.json`));
       const meta = JSON.parse(metaRaw);
-      if (meta.pages > 0) out.push({ number: n, ...meta });
+      if (meta.pages > 0) {
+        out.push({ number: n, ...meta });
+        totalPages += meta.pages;
+      }
     } catch (err) {
       console.warn(`Skipping ${n}: ${err.message}`);
     }
   }
+  dirSizeBytes = await getDirSize(MANGA_DIR);
   mangaCache = out;
   lastBuild = Date.now();
   console.log(`[cache] built ${out.length} manga`);
@@ -97,12 +122,28 @@ await cleanTempDir();
 
 app.post("/api/rescan", async (_req,res) => {
   await buildCache();
-  res.json({ ok: true, rebuilt: mangaCache.length, ts: lastBuild });
+  res.json({
+    ok: true,
+    rebuilt: mangaCache.length,
+    ts: lastBuild,
+    totalPages,
+    dirSizeBytes,
+  });
 });
 
 app.get("/api/manga", (_req,res) => {
   res.setHeader("Cache-Control","no-store");
   res.json(mangaCache);
+});
+
+app.get("/api/stats", (_req,res) => {
+  res.setHeader("Cache-Control","no-store");
+  res.json({
+    mangaCount: mangaCache.length,
+    totalPages,
+    dirSizeBytes,
+    ts: lastBuild,
+  });
 });
 
 app.get("/api/manga/:num", (req,res) => {
