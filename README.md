@@ -67,6 +67,8 @@ cd ../frontend && docker compose up -d
 ```
 
 Environment variables in `.env` files are automatically picked up during build.
+The backend responds to `OPTIONS` requests so the frontend can connect from
+other origins without additional configuration.
 
 ## Compatibility
 
