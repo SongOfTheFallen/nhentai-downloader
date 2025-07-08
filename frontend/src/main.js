@@ -120,9 +120,14 @@ function setupUI() {
   });
 
   document.querySelector(".top-controls").addEventListener("click", e => e.stopPropagation());
-  document.querySelectorAll(".fullscreen-btn, .back-button").forEach(btn =>
-    btn.addEventListener("click", e => e.stopPropagation())
-  );
+  const backBtn = document.querySelector(".back-button");
+  const fsBtn   = document.querySelector(".fullscreen-btn");
+  const prevBtn = document.querySelector(".nav-button.prev");
+  const nextBtn = document.querySelector(".nav-button.next");
+  backBtn.addEventListener("click", e => { e.stopPropagation(); backToLibrary(); });
+  fsBtn.addEventListener("click", e => { e.stopPropagation(); toggleFullscreen(); });
+  prevBtn.addEventListener("click", e => { e.stopPropagation(); previousPage(); });
+  nextBtn.addEventListener("click", e => { e.stopPropagation(); nextPage(); });
 
   const scrollTopBtn = document.getElementById("scrollTopBtn");
   scrollTopBtn.onclick = () => window.scrollTo({ top : 0, behavior : "smooth" });
@@ -403,7 +408,7 @@ function loadThumb(img) {
       updateCounts();
       return;
     }
-    img.src = `${MANGA_PATH}/${num}/1.${supportedFormats[idx++]}`;
+    img.src = `${MANGA_PATH}/${num}/1.${supportedFormats[idx++]}?token=${API_PASSWORD}`;
   };
 
   img.onload  = () => { img.dataset.loaded = true; };
@@ -535,7 +540,7 @@ function loadPage() {
       err.style.display    = "block";
       return;
     }
-    img.src = `${MANGA_PATH}/${currentManga}/${currentPage}.${supportedFormats[idx++]}`;
+    img.src = `${MANGA_PATH}/${currentManga}/${currentPage}.${supportedFormats[idx++]}?token=${API_PASSWORD}`;
   };
 
   img.onload  = () => { loader.style.display = "none"; err.style.display = "none"; img.classList.add("active"); };
