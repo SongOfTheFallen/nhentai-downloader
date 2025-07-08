@@ -38,7 +38,7 @@ cp frontend/.env.example frontend/.env
 npm run dev
 ```
 
-The backend listens on http://localhost:8787. The default password is `changeme` and can be changed in `backend/.env`.
+During development the frontend is served on http://localhost:8787 while the backend API listens on http://localhost:5173. The default password is `changeme` and can be changed in `backend/.env`. If the backend runs elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
 
 4. Build the frontend for production:
 
