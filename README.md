@@ -19,30 +19,52 @@ A tool to download and read nhentai doujinshi locally, featuring an intuitive an
 
 ## Installation and Usage
 
-1. Install the required dependencies:
+### Backend
+
+1. Install backend dependencies:
 
    ```bash
-   npm install
+   cd backend && npm install
+   ```
+
+2. Install Python dependencies used by the scraper:
+
+   ```bash
    pip install httpx beautifulsoup4 lxml
    ```
 
-2. Download doujinshi using the Python script:
+3. (Optional) create `backend/.env` to override the default password:
 
-   ```bash
-   python main.py
+   ```
+   APP_PASSWORD=mysecret
    ```
 
-3. Start the local server:
+   The default password is `changeme`.
+
+4. Start the backend server:
 
    ```bash
-   APP_PASSWORD=secret node server.js
+   npm start
    ```
 
    The server listens on `http://localhost:8787` by default. Set the `PORT`
    environment variable to use a different port.
 
-4. Access the application:
-   Visit [http://localhost:8787](http://localhost:8787) in your web browser.
+### Frontend
+
+The `frontend` directory contains only static files. Host them on any web
+server. When deploying, ensure `window.API_BASE` in `index.html` points to the
+backend URL, for example:
+
+```html
+<script>window.API_BASE = 'http://backend.example.com:8787';</script>
+```
+
+To run locally you can use:
+
+```bash
+cd frontend && npx serve .
+```
 
 ## Compatibility
 

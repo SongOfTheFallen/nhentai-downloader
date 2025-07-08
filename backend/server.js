@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import express from "express";
 import fs from "fs/promises";
 import { createReadStream, createWriteStream } from "fs";
@@ -8,29 +7,26 @@ import { fileURLToPath } from "url";
 import archiver from "archiver";
 import PDFDocument from "pdfkit";
 import dotenv from "dotenv";
+import cors from "cors";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
-const APP_PASSWORD = process.env.APP_PASSWORD;
-if(!APP_PASSWORD) {
-  console.log("No APP_PASSWORD set. Add it in a .env file to enable login.");
+const APP_PASSWORD = process.env.APP_PASSWORD || "changeme";
+if (process.env.APP_PASSWORD === undefined) {
+  console.log("Using default password 'changeme'. Set APP_PASSWORD in .env to change.");
 }
 
 const PORT = process.env.PORT ?? 8787;
-const PUBLIC_DIR = path.join(__dirname, "public");
 const MANGA_DIR = path.resolve("../manga"); // folder with 1/, 2/, …
 const SUPPORTED = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const TEMP_DIR = path.join(os.tmpdir(), "nhentai-tmp");
-const PROTECT = !!APP_PASSWORD;
 
 async function cleanTempDir() {
   try {
     await fs.mkdir(TEMP_DIR, { recursive: true });
     const files = await fs.readdir(TEMP_DIR);
-    await Promise.all(
-      files.map(f => fs.unlink(path.join(TEMP_DIR, f)).catch(() => {}))
-    );
+    await Promise.all(files.map(f => fs.unlink(path.join(TEMP_DIR, f)).catch(() => {})));
   } catch {}
 }
 
@@ -45,41 +41,14 @@ async function findPage(num, page) {
   return null;
 }
 
-
 const app = express();
-if (PROTECT) {
-  app.use(express.urlencoded({ extended: false }));
-  function parseCookies(c) {
-    return Object.fromEntries((c || "").split(/; */).filter(Boolean).map(s => s.split("=").map(decodeURIComponent)));
-  }
-  app.get("/login", (req, res) => {
-    res.setHeader("Cache-Control", "no-store");
-    res.sendFile(path.join(PUBLIC_DIR, "login.html"));
-  });
-  app.post("/login", (req, res) => {
-    if (req.body.password === APP_PASSWORD) {
-      res.cookie("auth", "1", { httpOnly: true });
-      const dest = req.body.redirect || req.query.redirect || "/";
-      return res.redirect(dest);
-    }
-    res.setHeader("Cache-Control", "no-store");
-    res.sendFile(path.join(PUBLIC_DIR, "login.html"));
-  });
-  app.use((req, res, next) => {
-    if (["/login", "/login.html", "/login.css"].includes(req.path)) return next();
-    const cookies = parseCookies(req.headers.cookie);
-    if (cookies.auth === "1") return next();
-    const dest = encodeURIComponent(req.originalUrl);
-    res.redirect(`/login?redirect=${dest}`);
-  });
-} else {
-  console.log("Password protection disabled");
-}
-
-app.use(express.static(PUBLIC_DIR, { maxAge: 0 }));
-app.use('/assets', express.static('assets'));
-app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" })); // serve images
-
+app.use(cors());
+app.use((req, res, next) => {
+  const key = req.headers["x-api-key"] || req.query.key;
+  if (key !== APP_PASSWORD) return res.status(401).json({ error: "unauthorized" });
+  next();
+});
+app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" }));
 
 // -------- In-memory cache ----------------------------------------------------
 let mangaCache = [];        // [{ number, pages, tags, … }]
@@ -117,7 +86,7 @@ app.post("/api/rescan", async (_req, res) => {
   res.json({ ok: true, rebuilt: mangaCache.length, ts: lastBuild });
 });
 
-// -------- API end-points ------------------------------------------------------
+// -------- API end-points -----------------------------------------------------
 app.get("/api/manga", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json(mangaCache);            // whole list (≈50–300 kB for 10k items)
@@ -180,15 +149,6 @@ app.get("/api/manga/:num/pdf", async (req, res) => {
   }
 });
 
-// Serve index.html for direct links like /123 or /123/1
-app.get(/^\/(\d+)(?:\/(\d+))?\/?$/, (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
-});
-// Catch-all 404 page
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(PUBLIC_DIR, "404.html"));
-});
-
 // -------- Start --------------------------------------------------------------
 function gracefulExit() {
   cleanTempDir().finally(() => process.exit());
@@ -199,4 +159,3 @@ process.on('SIGTERM', gracefulExit);
 app.listen(PORT, '0.0.0.0', () =>
   console.log(`🚀  http://localhost:${PORT}  (cache ${mangaCache.length})`)
 );
-
