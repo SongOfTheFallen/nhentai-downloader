@@ -1,17 +1,14 @@
 {
   "name": "nhentai-downloader-root",
   "version": "1.0.0",
-  "description": "Root package for nhentai-downloader",
   "scripts": {
-    "postinstall": "cd frontend && npm install",
-    "dev": "cd frontend && npm run dev",
-    "prod": "cd frontend && npm run prod",
-    "start": "cd frontend && npm run prod"
+    "install:all": "cd frontend && npm install && cd ../backend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com-songofthefallen:SongOfTheFallen/nhentai-downloader.git"
-  },
-  "license": "ISC",
-  "private": true
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
