@@ -7,6 +7,8 @@ const API_PASSWORD = import.meta.env.VITE_API_PASSWORD || "changeme";
 const API_LIST   = `${API_BASE}/api/manga`;   // GET  → cached list built by server
 const API_RESCAN = `${API_BASE}/api/rescan`;  // POST → optional rebuild trigger
 const MANGA_PATH = `${API_BASE}/manga`;       // static folder that contains pages
+const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
+const PAGE_SIZE = 30;                    // cards per batch
 function authHeaders() { return {"X-Auth-Token": API_PASSWORD}; }
 
 let previewsOn  = true;
