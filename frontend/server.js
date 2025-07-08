@@ -19,7 +19,7 @@ if(!APP_PASSWORD) {
 
 const PORT = process.env.PORT ?? 8787;
 const PUBLIC_DIR = path.join(__dirname, "public");
-const MANGA_DIR = path.resolve("manga"); // folder with 1/, 2/, …
+const MANGA_DIR = path.resolve("../manga"); // folder with 1/, 2/, …
 const SUPPORTED = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const TEMP_DIR = path.join(os.tmpdir(), "nhentai-tmp");
 const PROTECT = !!APP_PASSWORD;
