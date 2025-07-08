@@ -161,6 +161,7 @@ class Scraper:
         max_reqs_per_second: float | None = 3.0,
         user_agents_filepath: str | None = None,
         timeout: int = 20,
+        batch_size: int | None = None,
     ) -> None:
         """
         :param save_dir: Where the downloaded doujinshis be saved.
@@ -168,6 +169,7 @@ class Scraper:
         :param max_reqs_per_second: Limits the number of HTTP requests per second. "I will allow no more than X requests per second."
         :param user_agents_filepath: The path pointing to a text file, each line with a user agent.
         :param timeout: The timeout in seconds for ALL requests sent in the program's lifetime.
+        :param batch_size: The number of URLs to fetch concurrently in the scrape_multiple() and scrape_random() methods.
 
 
         To disable the rate limiter, pass ``None`` for `max_reqs_per_second`.
@@ -186,6 +188,13 @@ class Scraper:
             )
 
         self._max_coroutines = max_coroutines
+        self._max_reqs_per_second = max_reqs_per_second
+
+        if not batch_size:
+            self._batch_size: int = max_coroutines * 2
+        else:
+            self._batch_size: int = batch_size
+
         self._semaphore: asyncio.Semaphore = asyncio.Semaphore(max_coroutines)
         self._rate_limiter: RateLimiter = RateLimiter(max_reqs_per_second)
 
@@ -261,6 +270,7 @@ class Scraper:
                     async with self._session.get(
                         url, timeout=timeout, headers=headers
                     ) as res:
+                        log.debug(f"Fetched URL: {url}")
                         if res.status == 429:
                             retry_after = res.headers.get("Retry-After")
                             delay: float = (
@@ -468,10 +478,11 @@ class Scraper:
         # Download the initial image
         if not await self._download_image(doujin_dir, start_url):
             error_happened = True
+            return True
 
         downloaded_pages += 1
         log.debug(
-            f"Downloaded image {downloaded_pages:03}/{page_count:03} for doujin #{doujin_dir.name}"
+            f"Downloaded image {downloaded_pages:03}/{page_count:03} for doujinshi #{doujin_dir.name}"
         )
 
         # Cycle through all image IDs. Minus the first one.
@@ -484,16 +495,15 @@ class Scraper:
                 start_url = candidate_next
                 if success:
                     downloaded_pages += 1
+                    log.debug(
+                        f"Downloaded image {downloaded_pages:03}/{page_count:03} for doujinshi #{doujin_dir.name}"
+                    )
                     break
                 else:
                     log.warning(
                         f"Doujin #{int(doujin_dir.name):06}: Image {_ + 2:03}/{page_count}, candidate ext {previous_ext} failed."
                     )
                     error_happened = True
-
-            log.debug(
-                f"Downloaded image {downloaded_pages:03}/{page_count:03} for doujin #{doujin_dir.name}"
-            )
 
         return not error_happened
 
@@ -510,7 +520,7 @@ class Scraper:
         doujin_dir: Path = self.save_dir / str(id)
         if doujin_dir.exists():
             log.warning(f"Doujin directory {doujin_dir} already exists: skipping")
-            return
+            return doujin_dir
 
         ###### Req for the tags
         url_cover: str = self._build_doujin_url(id)
@@ -525,7 +535,7 @@ class Scraper:
         # log.debug(f"{tags = }")
         page_count: int | None = tags.get("pages")
         if not page_count:
-            log.warning(f"Page count for sauce {id} not found")
+            log.warning(f"Skipping doujinshi #{id:05}: Page count not found")
             return
 
         if not self._save_doujin_json(doujin_dir, tags):
@@ -561,6 +571,62 @@ class Scraper:
 
         return doujin_dir
 
+    async def _find_highest_id_parse_search(self) -> int:
+        url: str = "https://nhentai.net/search/?q=uploaded%3A%3C99999999d"
+        content: tuple[bytes, int] | None = await self._fetch(url)
+        if not content:
+            log.error(f"Failed to find highest ID by querying URL: {url}")
+            return -1
+        if not self._is_req_success(content[1]):
+            log.error(f"Failed to find highest ID, HTTP code {content[1]}: {url}")
+            return -1
+
+        highest_id: int | None = parsers.parse_first_doujin_id_in_search(content[0])
+        if highest_id is None:
+            log.error(f"Failed to find highest ID by parsing URL content: {url}")
+            return -1
+
+        return highest_id
+
+    # "Fix function so that it actually works. Maybe search on the searchbar for the most recent ones."
+    # Fixed. See function _find_highest_id_parse_search() above.
+    async def _find_highest_id_binary_search(
+        self, low: int = 1, high: int = 1_000_000
+    ) -> int:
+        """
+        THIS FUNCTION IS NOT FULLY SOUND, SOME HTTP REQS DO NOT RETURN 200 CODES BECAUSE THEIR IDS ARE INEXISTANT. (probably banned by the webmaster)
+        """
+        if low > high:
+            log.warning("Failed to determine highest ID: low must be smaller than high")
+            return -1
+
+        last_valid = -1
+        requests: int = 0
+
+        while low <= high:
+            mid = (low + high) // 2
+            res: tuple[bytes, int] | None = await self._fetch(f"{self._BASE_URL}{mid}")
+            if res and self._is_req_success(res[1]):
+                last_valid = mid  # track highest known valid
+                low = mid + 1  # try higher
+            else:
+                high = mid - 1  # too high, go lower
+            requests += 1
+
+        log.info(f"Highest ID found in {requests} requests is: #{last_valid:05}")
+        return last_valid
+
+    async def _find_highest_id(self) -> int:
+        """
+        Finds the highest doujinshi's ID on nhentai.net.
+        """
+        highest_id: int = await self._find_highest_id_parse_search()
+        log.info(f"Highest ID found: #{highest_id:05}")
+        if highest_id >= 0:
+            return highest_id
+
+        return await self._find_highest_id_binary_search()
+
     async def scrape_multiple(
         self, ids: Iterable[int], callback: Callable[[Path | None], None] | None = None
     ) -> None:
@@ -592,10 +658,21 @@ class Scraper:
 
         """
 
-        batch_size: int = self._max_coroutines * 5
+        batch_size: int = self._batch_size
         tasks = []
 
         total = len(ids) if hasattr(ids, "__len__") else None
+
+        total_str = "[size unknown]" if not total else str(total)
+        rps_str = (
+            "unlimited"
+            if not self._max_reqs_per_second
+            else str(self._max_reqs_per_second)
+        )
+        log.info(
+            f"Scraping {total_str} doujinshis. Batch size of {batch_size}, number of concurrent downloads allowed: {self._max_coroutines}, number of requests per seconds allowed: {rps_str} req/s"
+        )
+
         completed = 0
         batch_processed: int = 0
 
@@ -626,22 +703,90 @@ class Scraper:
             if len(tasks) >= batch_size:
                 await process_batch()
                 tasks.clear()
+                # After each batch, wait between 1 to 2 seconds.
+                await asyncio.sleep(random.uniform(1.5, 2.5))
 
         # Process any remaining tasks
         if tasks:
             await process_batch()
 
-    async def scrape_random(
-        self, n: int, start: int = 1, stop: int | None = None
+    async def scrape_all(
+        self, callback: Callable[[Path | None], None] | None = None
     ) -> None:
         """
-        Downloads `n` (n>=1) doujinshis randomly from ID `start` up to and including ID `stop`.
+        Tries to scrape all of the doujinshis from ID 1 up to the determined max.
+        callback: Optional function called after each download completes.
+            Receives the Path to the downloaded doujinshi, or None if
+            the download failed. Useful for progress tracking or logging.
+        """
+        max_id: int = await self._find_highest_id()
+        if max_id < 1:
+            log.error("Failed to determine the highest ID")
+            return
+
+        return await self.scrape_multiple(range(1, max_id + 1), callback)
+
+    async def scrape_random(
+        self,
+        n: int,
+        min_id: int = 1,
+        max_id: int | None = None,
+        callback: Callable[[Path | None], None] | None = None,
+    ) -> None:
+        """
+        Downloads `n` doujinshis randomly from ID `min_id` up to and including ID `max_id`.
         Default behavior (start and stop not specified):
         Determines the highest ID and selects random doujinshis.
+
+        Special Case:
+            if `n` is negative (-1), download up to and including `max_id` Ids.
+            This makes it so you can download ALL the doujinshis of the site randomly by doing this:
+            `scrape_random(-1)`
+
+        :param batch_size: How many doujinshis will be downloaded concurrently.
 
         start >= 1.
         As for stop, TODO.
 
-        Returns: List of IDs that were downloaded.ins the highest ID and and selects random doujinshis
+        callback: Optional function called after each download completes.
+        Receives the Path to the downloaded doujinshi, or None if
+        the download failed. Useful for progress tracking or logging.
+
+
+        Returns: None, pass callback to get information about each doujinshi.
+
         """
-        pass
+        highest_id: int = await self._find_highest_id()
+        if highest_id < 1:
+            log.error("Failed to determine the highest ID")
+            return
+        if not max_id:
+            max_id = highest_id
+
+        if max_id < min_id:
+            log.error("Cannot choose random IDs: max_id must be greater than min_id")
+            return
+
+        if n < 0:
+            n = max_id
+
+        rps_str = (
+            "unlimited"
+            if not self._max_reqs_per_second
+            else str(self._max_reqs_per_second)
+        )
+        log.info(
+            f"Scraping {n} doujinshis randomly from ID {min_id} to {max_id}. Batch size of {self._batch_size}, number of concurrent downloads allowed: {self._max_coroutines}, number of requests per seconds allowed: {rps_str} req/s"
+        )
+
+        id_range: range = range(min_id, max_id + 1)
+
+        if len(id_range) < n:
+            log.warning(
+                "n is greater than ID population; please increase the population or decrease n"
+            )
+            return
+
+        # Random IDs (very RAM-inneficient, but oh well... (~7MiB for a list of 1_000_000 rnd integers...))
+        rnd_ids: list[int] = random.sample(id_range, n)
+        await self.scrape_multiple(rnd_ids, callback)

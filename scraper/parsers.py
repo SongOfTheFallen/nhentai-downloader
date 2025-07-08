@@ -43,7 +43,7 @@ def parse_tags(content: bytes, url: str) -> dict[str, Any]:
         field_name = field_text.split(":")[0].lower() if ":" in field_text else ""
 
         if not field_name:
-            logging.debug(
+            logger.debug(
                 f"Failed to parse tag field name (empty) for field text: {field_text}"
             )
             continue
@@ -88,3 +88,30 @@ def parse_image_direct_link(content: bytes) -> str | None:
 
     if img and (src := img.get("src")):
         return str(src)
+
+
+def parse_first_doujin_id_in_search(content: bytes) -> int | None:
+    """
+    Returns the ID of the first doujinshi by parsing the `content`.
+    Content should come from a search results page.
+    """
+    parsed_id: int | None = None
+
+    soup = BeautifulSoup(content, "html.parser")
+    container = soup.find("div", class_="container index-container")
+
+    if container is None:
+        return None
+
+    a = container.find("a", class_="cover")
+    if not a:
+        return None
+
+    # e.g., href="/g/583036/"
+    href: str = a.get("href", "").strip()
+    try:
+        parsed_id = int(href.split("/")[2])
+    except (IndexError, ValueError):
+        logger.warning("Failed to parse first doujinshi ID from href")
+
+    return parsed_id
