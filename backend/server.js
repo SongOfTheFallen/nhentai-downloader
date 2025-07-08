@@ -41,13 +41,18 @@ const app = express();
 app.use((req,res,next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Auth-Token");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Auth-Token"
+  );
   if (req.method === "OPTIONS") return res.end();
   next();
 });
 app.use((req,res,next) => {
-  const token = req.headers["x-auth-token"] || req.query.token;
-  if (APP_PASSWORD && token !== APP_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
+  const header = req.headers["authorization"] || req.headers["x-auth-token"];
+  const token  = header ? String(header).replace(/^Bearer\s+/i, "") : null;
+  if (APP_PASSWORD && token !== APP_PASSWORD)
+    return res.status(401).json({ error: "Unauthorized" });
   next();
 });
 app.use("/manga", express.static(MANGA_DIR, { maxAge: "1d" }));

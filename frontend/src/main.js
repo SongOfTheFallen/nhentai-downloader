@@ -9,7 +9,8 @@ const API_RESCAN = `${API_BASE}/api/rescan`;  // POST → optional rebuild trigg
 const MANGA_PATH = `${API_BASE}/manga`;       // static folder that contains pages
 const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const PAGE_SIZE = 30;                    // cards per batch
-function authHeaders() { return {"X-Auth-Token": API_PASSWORD}; }
+function authHeaders() { return { Authorization: `Bearer ${API_PASSWORD}` }; }
+let currentExt = supportedFormats[0];
 
 let previewsOn  = true;
 let libraryPage = 1;
@@ -380,13 +381,25 @@ function createCard(m) {
   return card;
 }
 
-function downloadManga(num, type) {
-  const link = document.createElement('a');
-  link.href = `${API_BASE}/api/manga/${num}/${type}?token=${API_PASSWORD}`;
-  link.download = '';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+async function downloadManga(num, type) {
+  try {
+    const res = await fetch(`${API_BASE}/api/manga/${num}/${type}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert("Download failed");
+  }
 }
 
 function closeAllMenus() {
@@ -402,17 +415,35 @@ function loadThumb(img) {
   const num = img.dataset.number;
   let idx   = 0;
 
-  const tryNext = () => {
+  const tryNext = async () => {
     if (idx >= supportedFormats.length) {
       img.closest(".manga-card")?.remove();
       updateCounts();
       return;
     }
-    img.src = `${MANGA_PATH}/${num}/1.${supportedFormats[idx++]}?token=${API_PASSWORD}`;
+    const ext = supportedFormats[idx++];
+    try {
+      const res = await fetch(
+        `${MANGA_PATH}/${num}/1.${ext}`,
+        { headers: authHeaders() }
+      );
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        img.dataset.loaded = true;
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        tryNext();
+      };
+      img.src = url;
+    } catch {
+      tryNext();
+    }
   };
 
-  img.onload  = () => { img.dataset.loaded = true; };
-  img.onerror = tryNext;
   tryNext();
 }
 
@@ -525,30 +556,47 @@ function openManga(num, page = 1, pushHistory = true) {
 
   if (pushHistory) history.pushState({}, "", `/${currentManga}/${currentPage}`);
 
+  currentExt = supportedFormats[0];
   loadPage();
 }
 
-function loadPage() {
+async function loadPage() {
   const img    = document.getElementById("mangaImage");
   const loader = document.getElementById("loading");
   const err    = document.getElementById("error");
 
-  let idx = 0;
-  const tryNext = () => {
-    if (idx >= supportedFormats.length) {
-      loader.style.display = "none";
-      err.style.display    = "block";
-      return;
-    }
-    img.src = `${MANGA_PATH}/${currentManga}/${currentPage}.${supportedFormats[idx++]}?token=${API_PASSWORD}`;
-  };
-
-  img.onload  = () => { loader.style.display = "none"; err.style.display = "none"; img.classList.add("active"); };
-  img.onerror = () => { img.classList.remove("active"); tryNext(); };
+  const exts = [
+    currentExt,
+    ...supportedFormats.filter(e => e !== currentExt),
+  ];
 
   loader.style.display = "block";
   img.classList.remove("active");
-  tryNext();
+  err.style.display = "none";
+
+  for (const ext of exts) {
+    try {
+      const res = await fetch(
+        `${MANGA_PATH}/${currentManga}/${currentPage}.${ext}`,
+        { headers: authHeaders() }
+      );
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      await new Promise((resolve, reject) => {
+        img.onload = () => { URL.revokeObjectURL(url); resolve(); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+        img.src = url;
+      });
+      currentExt = ext;
+      loader.style.display = "none";
+      img.classList.add("active");
+      return;
+    } catch {}
+  }
+
+  loader.style.display = "none";
+  err.style.display = "block";
 }
 
 function nextPage() {

@@ -40,6 +40,8 @@ npm run dev
 
 During development the frontend is served on http://localhost:8787 while the backend API listens on http://localhost:5173.
 The default password is `changeme` and can be changed in `backend/.env`.
+All requests must include this password in an `Authorization` header,
+e.g. `Authorization: Bearer changeme`.
 You may also set `HOST` and `PORT` there to bind the backend to a different address.
 If the backend runs elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
 
