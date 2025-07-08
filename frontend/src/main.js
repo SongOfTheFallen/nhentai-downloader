@@ -571,11 +571,33 @@ function togglePreviews() {
   }
 }
 
-function openRandomManga() {
+async function mangaHasFirstPage(num) {
+  for (const ext of supportedFormats) {
+    try {
+      const res = await fetch(
+        `${MANGA_PATH}/${num}/1.${ext}`,
+        { method: "HEAD", headers: authHeaders() }
+      );
+      if (res.ok) return true;
+    } catch {}
+  }
+  return false;
+}
+
+async function openRandomManga() {
   if (!mangaData.length) return;
-  const idx = Math.floor(Math.random() * mangaData.length);
-  const num = mangaData[idx].number;
-  openManga(num, 1, true);
+  const tried = new Set();
+  while (tried.size < mangaData.length) {
+    const idx = Math.floor(Math.random() * mangaData.length);
+    const entry = mangaData[idx];
+    if (tried.has(entry.number)) continue;
+    tried.add(entry.number);
+    if (await mangaHasFirstPage(entry.number)) {
+      openManga(entry.number, 1, true);
+      return;
+    }
+  }
+  alert("No valid manga available.");
 }
 
 /*****************************************************************************

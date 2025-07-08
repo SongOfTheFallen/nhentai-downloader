@@ -105,8 +105,13 @@ async function buildCache() {
       const metaRaw = await fs.readFile(path.join(MANGA_DIR, `${n}/meta.json`));
       const meta = JSON.parse(metaRaw);
       if (meta.pages > 0) {
-        out.push({ number: n, ...meta });
-        totalPages += meta.pages;
+        const page1 = await findPage(n, 1);
+        if (page1) {
+          out.push({ number: n, ...meta });
+          totalPages += meta.pages;
+        } else {
+          console.warn(`Skipping ${n}: missing images`);
+        }
       }
     } catch (err) {
       console.warn(`Skipping ${n}: ${err.message}`);
