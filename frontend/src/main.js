@@ -1,7 +1,8 @@
 /*****************************************************************************
  * CONSTANTS & STATE                                                         *
  *****************************************************************************/
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
 const API_PASSWORD = import.meta.env.VITE_API_PASSWORD || "changeme";
 const API_LIST   = `${API_BASE}/api/manga`;   // GET  → cached list built by server
 const API_RESCAN = `${API_BASE}/api/rescan`;  // POST → optional rebuild trigger

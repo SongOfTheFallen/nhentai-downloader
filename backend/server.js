@@ -56,15 +56,31 @@ let mangaCache = [];
 let lastBuild = 0;
 
 async function buildCache() {
-  const dirs = await fs.readdir(MANGA_DIR, { withFileTypes: true });
-  const numbers = dirs.filter(d => d.isDirectory() && /^\d+$/.test(d.name)).map(d => +d.name).sort((a,b) => a-b);
+  try {
+    await fs.mkdir(MANGA_DIR, { recursive: true });
+  } catch {}
+
+  let dirs = [];
+  try {
+    dirs = await fs.readdir(MANGA_DIR, { withFileTypes: true });
+  } catch (err) {
+    console.error("Failed to read manga directory", err);
+  }
+
+  const numbers = dirs
+    .filter(d => d.isDirectory() && /^\d+$/.test(d.name))
+    .map(d => +d.name)
+    .sort((a, b) => a - b);
+
   const out = [];
   for (const n of numbers) {
     try {
       const metaRaw = await fs.readFile(path.join(MANGA_DIR, `${n}/meta.json`));
       const meta = JSON.parse(metaRaw);
       if (meta.pages > 0) out.push({ number: n, ...meta });
-    } catch {}
+    } catch (err) {
+      console.warn(`Skipping ${n}: ${err.message}`);
+    }
   }
   mangaCache = out;
   lastBuild = Date.now();
