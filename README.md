@@ -44,6 +44,9 @@ If `VITE_API_PASSWORD` is left empty in the frontend `.env` file, a login
 screen will prompt users for the backend password and store it in the browser.
 Otherwise all requests automatically include the password in an `Authorization`
 header, e.g. `Authorization: Bearer changeme`.
+If you set `VITE_USER_PASSWORD` in the frontend `.env` file, visitors must enter
+that password on the login screen. It will be kept in a cookie so subsequent
+page loads are allowed.
 You may also set `HOST` and `PORT` there to bind the backend to a different address.
 If the backend runs elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
 

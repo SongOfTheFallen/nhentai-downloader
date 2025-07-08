@@ -3,6 +3,17 @@
  *****************************************************************************/
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
+const USER_PASSWORD = import.meta.env.VITE_USER_PASSWORD || "";
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+if (USER_PASSWORD && getCookie("userAuth") !== USER_PASSWORD) {
+  const dest = encodeURIComponent(location.pathname + location.search);
+  location.href = `/login.html?redirect=${dest}`;
+  throw new Error("login required");
+}
 const storedPassword = localStorage.getItem("apiPassword");
 if (!import.meta.env.VITE_API_PASSWORD && !storedPassword) {
   const dest = encodeURIComponent(location.pathname + location.search);

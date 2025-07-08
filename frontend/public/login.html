@@ -15,20 +15,11 @@
   <div class="login-container">
     <h1>Manga Library</h1>
     <form id="loginForm">
-      <input type="password" name="password" placeholder="Password" required>
+      <input type="password" name="userPassword" id="userPassword" placeholder="Access Password">
+      <input type="password" name="apiPassword" id="apiPassword" placeholder="API Password">
       <button type="submit">Enter</button>
     </form>
   </div>
-  <script>
-    const form = document.getElementById('loginForm');
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const pw = form.password.value;
-      localStorage.setItem('apiPassword', pw);
-      const params = new URLSearchParams(location.search);
-      const redir = params.get('redirect') || '/';
-      location.href = redir;
-    });
-  </script>
+  <script type="module" src="/src/login.js"></script>
 </body>
 </html>
