@@ -44,6 +44,7 @@ All requests to the API must include this password in an `Authorization` header,
 You may also set `HOST` and `PORT` there to bind the backend to a different address.
 If the backend runs elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
 Optionally set `VITE_USER_PASSWORD` in `frontend/.env` to require visitors to enter a second password before accessing the library.
+Set `USER_PASSWORD` in `backend/.env` to have the backend verify this password via the `/api/login` endpoint.
 
 The endpoint `/api/stats` returns the total number of pages and the size of the manga directory in bytes.
 

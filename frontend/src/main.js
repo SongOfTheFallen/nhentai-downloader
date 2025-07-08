@@ -111,6 +111,7 @@ function setupUI() {
   document.getElementById("normalView").onclick  = () => setCompact(false);
   document.getElementById("compactView").onclick = () => setCompact(true);
   document.getElementById("previewToggle").onclick = togglePreviews;
+  document.getElementById("randomizeBtn").onclick = randomizeLibrary;
   document.getElementById("randomBtn").onclick = openRandomManga;
   document.getElementById("pageInput")
     .addEventListener("change", e => {
@@ -569,6 +570,15 @@ function togglePreviews() {
     document.querySelectorAll(".manga-thumb")
             .forEach(img => thumbObserver.unobserve(img));
   }
+}
+
+function randomizeLibrary() {
+  for (let i = filteredManga.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [filteredManga[i], filteredManga[j]] = [filteredManga[j], filteredManga[i]];
+  }
+  libraryPage = 1;
+  renderGrid();
 }
 
 async function mangaHasFirstPage(num) {

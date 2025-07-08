@@ -13,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 const APP_PASSWORD = process.env.APP_PASSWORD || "changeme";
+const USER_PASSWORD = process.env.USER_PASSWORD || "";
 const PORT = process.env.PORT ?? 5173;
 const HOST = process.env.HOST || "0.0.0.0";
 const MANGA_DIR = path.resolve("../manga");
@@ -59,6 +60,14 @@ async function findPage(num, page) {
 }
 
 const app = express();
+
+// Login endpoint before auth middleware
+app.post("/api/login", express.json(), (req, res) => {
+  const { password } = req.body || {};
+  if (!USER_PASSWORD) return res.json({ ok: true });
+  if (password === USER_PASSWORD) return res.json({ ok: true });
+  res.status(401).json({ error: "Invalid password" });
+});
 
 // Respond to all OPTIONS preflight requests for CORS
 app.use(
@@ -163,8 +172,9 @@ app.get("/api/manga/:num/archive", async (req,res) => {
   const num = +req.params.num;
   const entry = mangaCache.find(m => m.number === num);
   if(!entry) return res.status(404).end();
+  const fname = `doujinshi_${String(num).padStart(5, '0')}`;
   res.setHeader("Content-Type","application/zip");
-  res.setHeader("Content-Disposition", `attachment; filename="${num}.zip"`);
+  res.setHeader("Content-Disposition", `attachment; filename="${fname}.zip"`);
   const archive = archiver("zip", { zlib: { level: 9 } });
   archive.on("error", err => { console.error(err); res.end(); });
   archive.pipe(res);
@@ -195,8 +205,9 @@ app.get("/api/manga/:num/pdf", async (req,res) => {
     }
     pdf.end();
     out.on("close", () => {
+      const fname = `doujinshi_${String(num).padStart(5, '0')}`;
       res.setHeader("Content-Type","application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="${num}.pdf"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${fname}.pdf"`);
       const stream = createReadStream(tmp);
       stream.pipe(res);
       stream.on("close", () => fs.unlink(tmp).catch(() => {}));
