@@ -13,7 +13,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 const APP_PASSWORD = process.env.APP_PASSWORD || "changeme";
-const USER_PASSWORD = process.env.USER_PASSWORD || "";
 const PORT = process.env.PORT ?? 5173;
 const HOST = process.env.HOST || "0.0.0.0";
 const MANGA_DIR = path.resolve("../manga");
@@ -60,14 +59,6 @@ async function findPage(num, page) {
 }
 
 const app = express();
-
-// Login endpoint before auth middleware
-app.post("/api/login", express.json(), (req, res) => {
-  const { password } = req.body || {};
-  if (!USER_PASSWORD) return res.json({ ok: true });
-  if (password === USER_PASSWORD) return res.json({ ok: true });
-  res.status(401).json({ error: "Invalid password" });
-});
 
 // Respond to all OPTIONS preflight requests for CORS
 app.use(
