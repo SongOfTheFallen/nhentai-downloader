@@ -11,7 +11,7 @@
     .github-link { color:#4a9eff; text-decoration:none; }
     .github-link:hover { text-decoration:underline; }
     .github-icon { width:24px; height:24px; vertical-align:middle; margin-right:6px; }
-    .back-link { display:inline-block; margin-top:30px; color:#4a9eff; }
+    .info-back { margin-bottom:20px; display:inline-block; }
 
     @media(max-width:480px) {
       body { padding:20px; font-size:1.1rem; }
@@ -19,6 +19,7 @@
   </style>
 </head>
 <body>
+  <button class="back-button info-back" onclick="location.href='/'">&larr; Back</button>
   <h1>About this App</h1>
   <p>The front-end of this reader was built exclusively using ChatGPT. The scraper and back-end were hand coded.</p>
   <p>
@@ -31,6 +32,5 @@
     </a>.
   </p>
   <p>Enjoy browsing!</p>
-  <a class="back-link" href="/">&larr; Back</a>
 </body>
 </html>
