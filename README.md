@@ -38,7 +38,8 @@ cp frontend/.env.example frontend/.env
 npm run dev
 ```
 
-During development the frontend is served on http://localhost:8787 while the backend API listens on http://localhost:5173.
+During development the frontend is served on http://localhost:8787 by default while the backend API listens on http://localhost:5173.
+Set `PORT` in `frontend/.env` to use a different port for the frontend.
 The password defined in `backend/.env` (`APP_PASSWORD`) is used internally by the frontend to talk to the API and should remain private.
 All requests to the API must include this password in an `Authorization` header, e.g. `Authorization: Bearer changeme`.
 You may also set `HOST` and `PORT` there to bind the backend to a different address.

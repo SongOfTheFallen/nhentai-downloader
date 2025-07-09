@@ -8,6 +8,6 @@ services:
         VITE_API_PASSWORD: ${VITE_API_PASSWORD}
         VITE_USER_PASSWORD: ${VITE_USER_PASSWORD}
     ports:
-      - "8787:80"
+      - "${PORT:-8787}:80"
     env_file:
       - .env
