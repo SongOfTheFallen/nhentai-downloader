@@ -3,7 +3,7 @@ services:
     restart: unless-stopped
     build: .
     ports:
-      - "${PORT:-5173}:5173"
+      - "${DOCKER_PORT:-5173}:5173"
     env_file:
       - .env
     volumes:
