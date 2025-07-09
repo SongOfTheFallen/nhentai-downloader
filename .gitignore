@@ -596,3 +596,6 @@ project.zip
 backend/manga/*
 
 data/
+
+*.old
+*.bak

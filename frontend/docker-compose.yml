@@ -1,6 +1,5 @@
-version: '3'
 services:
-  frontend:
+  frontend-nhentai-downloader:
     build:
       context: .
       args:

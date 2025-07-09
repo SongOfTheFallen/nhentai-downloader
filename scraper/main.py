@@ -27,10 +27,10 @@ async def main() -> None:
     log.debug("nhentai scraper started!")
 
     async with Scraper(
-        "/mnt/nfs_minipc/nfs_shared/nhentai-downloader/manga/",
+        "../manga/",
         max_coroutines=1000,
-        max_reqs_per_second=10,
-        batch_size=80,
+        max_reqs_per_second=6,
+        batch_size=70,
     ) as s:
         # res = await s.scrape_single(583003)
         # log.info(f"Downloaded single doujin, response is: {res}")
