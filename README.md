@@ -71,6 +71,11 @@ Environment variables in `.env` files are automatically picked up during build.
 The backend responds to `OPTIONS` requests so the frontend can connect from
 other origins without additional configuration.
 
+When deploying the frontend with the provided Dockerfile, Nginx is configured
+to serve `index.html` for any unknown paths so the single-page app can handle
+client side routing. This prevents 404 errors when refreshing a page inside the
+viewer.
+
 ## Compatibility
 
 This program was developed, tested, and runs with Python 3.13. It is expected to be compatible with Python 3.11 and may also work on Python 3.10, but it will not function correctly on versions earlier than 3.10.
