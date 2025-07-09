@@ -474,7 +474,8 @@ async function downloadManga(num, type) {
     });
     if (!res.ok) throw new Error(`status ${res.status}`);
     const blob = await res.blob();
-    let filename = "";
+    let filename = `doujinshi_${String(num).padStart(5, "0")}.${
+      type === "archive" ? "zip" : "pdf"}`;
     const disp = res.headers.get("content-disposition");
     if (disp) {
       const m = /filename="?([^";]+)"?/i.exec(disp);

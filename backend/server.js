@@ -68,6 +68,7 @@ app.use(
     origin: "*",                               // or a specific origin
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Auth-Token"],
+    exposedHeaders: ["Content-Disposition"],
   })
 );
 
