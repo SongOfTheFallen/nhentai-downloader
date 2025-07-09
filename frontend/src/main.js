@@ -3,24 +3,16 @@
  *****************************************************************************/
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
-const API_PASSWORD  = import.meta.env.VITE_API_PASSWORD  || "changeme";
-const USER_PASSWORD = import.meta.env.VITE_USER_PASSWORD || "";
+const API_KEY = import.meta.env.VITE_API_KEY || "changeme";
 const API_LIST   = `${API_BASE}/api/manga`;   // GET  → cached list built by server
 const API_RESCAN = `${API_BASE}/api/rescan`;  // POST → optional rebuild trigger
 const API_STATS  = `${API_BASE}/api/stats`;
 const MANGA_PATH = `${API_BASE}/manga`;       // static folder that contains pages
 const supportedFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 const PAGE_SIZE = 30;                    // cards per batch
-function authHeaders() { return { Authorization: `Bearer ${API_PASSWORD}` }; }
+function authHeaders() { return { Authorization: `Bearer ${API_KEY}` }; }
 let currentExt = supportedFormats[0];
-
-if (USER_PASSWORD) {
-  const authed = document.cookie.split(';').some(c => c.trim() === 'auth=1');
-  if (!authed) {
-    const dest = encodeURIComponent(location.pathname + location.search + location.hash);
-    location.href = `/login.html?redirect=${dest}`;
-  }
-}
+let loginRequired = false;
 
 let dirSizeBytes = 0;
 
@@ -61,6 +53,19 @@ let pendingRoute = null;
  * INIT                                                                      *
  *****************************************************************************/
 window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const resp = await fetch(`${API_BASE}/api/login`);
+    const data = await resp.json();
+    loginRequired = data.required;
+  } catch {}
+  if (loginRequired) {
+    const authed = document.cookie.split(';').some(c => c.trim() === 'auth=1');
+    if (!authed) {
+      const dest = encodeURIComponent(location.pathname + location.search + location.hash);
+      location.href = `/login.html?redirect=${dest}`;
+      return;
+    }
+  }
   const params = new URLSearchParams(location.search);
   const p = parseInt(params.get("p") || "1", 10);
   if (!Number.isNaN(p) && p > 0) libraryPage = p;

@@ -5,8 +5,7 @@ services:
       context: .
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
-        VITE_API_PASSWORD: ${VITE_API_PASSWORD}
-        VITE_USER_PASSWORD: ${VITE_USER_PASSWORD}
+        VITE_API_KEY: ${VITE_API_KEY}
     ports:
       - "${DOCKER_PORT:-8787}:80"
     env_file:

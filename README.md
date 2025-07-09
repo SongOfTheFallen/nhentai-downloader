@@ -40,11 +40,11 @@ npm run dev
 
 During development the frontend is served on http://localhost:8787 by default while the backend API listens on http://localhost:5173.
 Set `PORT` in `frontend/.env` to use a different port for the frontend.
-The password defined in `backend/.env` (`APP_PASSWORD`) is used internally by the frontend to talk to the API and should remain private.
-All requests to the API must include this password in an `Authorization` header, e.g. `Authorization: Bearer changeme`.
+The key defined in `backend/.env` (`API_KEY`) is used internally by the frontend to talk to the API and should remain private.
+All requests to the API must include this key in an `Authorization` header, e.g. `Authorization: Bearer changeme`.
 You may also set `HOST` and `PORT` there to bind the backend to a different address.
 If the backend runs elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
-Optionally set `VITE_USER_PASSWORD` in `frontend/.env` to require visitors to enter a second password before accessing the library.
+Optionally set `USER_PASSWORD` in `backend/.env` to require visitors to enter a second password before accessing the library.
 
 The endpoint `/api/stats` returns the total number of pages and the size of the manga directory in bytes.
 

@@ -12,7 +12,8 @@ import dotenv from "dotenv";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
-const APP_PASSWORD = process.env.APP_PASSWORD || "changeme";
+const API_KEY = process.env.API_KEY || "changeme";
+const USER_PASSWORD = process.env.USER_PASSWORD || "";
 const PORT = process.env.PORT ?? 5173;
 const HOST = process.env.HOST || "0.0.0.0";
 const MANGA_DIR = path.resolve("../manga");
@@ -59,6 +60,7 @@ async function findPage(num, page) {
 }
 
 const app = express();
+app.use(express.json());
 
 // Respond to all OPTIONS preflight requests for CORS
 app.use(
@@ -70,9 +72,10 @@ app.use(
 );
 
 app.use((req,res,next) => {
+  if (req.path === "/api/login") return next();
   const header = req.headers["authorization"] || req.headers["x-auth-token"];
   const token  = header ? String(header).replace(/^Bearer\s+/i, "") : null;
-  if (APP_PASSWORD && token !== APP_PASSWORD)
+  if (API_KEY && token !== API_KEY)
     return res.status(401).json({ error: "Unauthorized" });
   next();
 });
@@ -125,6 +128,16 @@ async function buildCache() {
 
 await buildCache();
 await cleanTempDir();
+
+app.get("/api/login", (_req,res) => {
+  res.json({ required: !!USER_PASSWORD });
+});
+
+app.post("/api/login", (req,res) => {
+  const pass = req.body?.password || "";
+  if (!USER_PASSWORD || pass === USER_PASSWORD) return res.json({ ok: true });
+  res.status(401).json({ error: "Invalid password" });
+});
 
 app.post("/api/rescan", async (_req,res) => {
   await buildCache();
