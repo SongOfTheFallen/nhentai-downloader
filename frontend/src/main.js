@@ -14,6 +14,10 @@ function authHeaders() { return { Authorization: `Bearer ${API_KEY}` }; }
 let currentExt = supportedFormats[0];
 let loginRequired = false;
 
+const PAGE_CACHE_LIMIT = 10;             // max pages kept in memory
+const PREFETCH_AHEAD   = 2;              // pages to prefetch after current
+const pageCache = new Map();             // page -> { blob, ext }
+
 let dirSizeBytes = 0;
 
 function fmt(n, d = 0) {
@@ -35,6 +39,41 @@ function formatSize(bytes) {
   }
   const d = i === 0 ? 0 : 1;
   return `${fmt(n, d)} ${units[i]}`;
+}
+
+function trimPageCache() {
+  while (pageCache.size > PAGE_CACHE_LIMIT) {
+    const key = pageCache.keys().next().value;
+    pageCache.delete(key);
+  }
+}
+
+async function fetchPageBlob(page) {
+  if (pageCache.has(page)) return pageCache.get(page);
+  const exts = [currentExt, ...supportedFormats.filter(e => e !== currentExt)];
+  for (const ext of exts) {
+    try {
+      const res = await fetch(
+        `${MANGA_PATH}/${currentManga}/${page}.${ext}`,
+        { headers: authHeaders() }
+      );
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const data = { blob, ext };
+      pageCache.set(page, data);
+      trimPageCache();
+      return data;
+    } catch {}
+  }
+  throw new Error("page not found");
+}
+
+function prefetchPages(start) {
+  for (let i = 0; i < PREFETCH_AHEAD; i++) {
+    const p = start + i;
+    if (p > maxPage) break;
+    if (!pageCache.has(p)) fetchPageBlob(p).catch(() => {});
+  }
 }
 
 let previewsOn  = true;
@@ -635,6 +674,7 @@ function openManga(num, page = 1, pushHistory = true) {
   if (pushHistory) history.pushState({}, "", `/${currentManga}/${currentPage}`);
 
   currentExt = supportedFormats[0];
+  pageCache.clear();
   loadPage();
 }
 
@@ -642,39 +682,27 @@ async function loadPage() {
   const img    = document.getElementById("mangaImage");
   const loader = document.getElementById("loading");
   const err    = document.getElementById("error");
-
-  const exts = [
-    currentExt,
-    ...supportedFormats.filter(e => e !== currentExt),
-  ];
-
   loader.style.display = "block";
   img.classList.remove("active");
   err.style.display = "none";
 
-  for (const ext of exts) {
-    try {
-      const res = await fetch(
-        `${MANGA_PATH}/${currentManga}/${currentPage}.${ext}`,
-        { headers: authHeaders() }
-      );
-      if (!res.ok) throw new Error();
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      await new Promise((resolve, reject) => {
-        img.onload = () => { URL.revokeObjectURL(url); resolve(); };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(); };
-        img.src = url;
-      });
-      currentExt = ext;
-      loader.style.display = "none";
-      img.classList.add("active");
-      return;
-    } catch {}
+  try {
+    const { blob, ext } = await fetchPageBlob(currentPage);
+    currentExt = ext;
+    const url = URL.createObjectURL(blob);
+    await new Promise((resolve, reject) => {
+      img.onload = () => { URL.revokeObjectURL(url); resolve(); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+      img.src = url;
+    });
+    loader.style.display = "none";
+    img.classList.add("active");
+    prefetchPages(currentPage + 1);
+    return;
+  } catch {
+    loader.style.display = "none";
+    err.style.display = "block";
   }
-
-  loader.style.display = "none";
-  err.style.display = "block";
 }
 
 function nextPage() {
@@ -708,6 +736,7 @@ function backToLibrary(pushHistory = true) {
   }
   currentManga = null;
   currentPage  = 1;
+  pageCache.clear();
   window.scrollTo(0, libraryScrollY);
   if (pushHistory) history.pushState({}, "", "/");
 }
