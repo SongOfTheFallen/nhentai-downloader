@@ -474,10 +474,16 @@ async function downloadManga(num, type) {
     });
     if (!res.ok) throw new Error(`status ${res.status}`);
     const blob = await res.blob();
+    let filename = "";
+    const disp = res.headers.get("content-disposition");
+    if (disp) {
+      const m = /filename="?([^";]+)"?/i.exec(disp);
+      if (m) filename = m[1];
+    }
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "";
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
