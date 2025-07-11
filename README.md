@@ -99,6 +99,14 @@ Static images are served from `/manga`.
 The scraper targets Python 3.13 but also works on Python 3.11 and 3.12. Earlier
 versions are not supported. The Node backend requires Node.js 20 or later.
 
+## AI Reliance
+
+**Both the front-end and back-end components were generated entirely by AI**, with no human-written code. Only the scraper component was hand-crafted.
+
+### Motivation
+
+Once the scraper component was complete, I wanted to *quickly* create a front-end. However, thanks to the power of OpenAI Codex, the project soon evolved into a full-fledged, API-driven website with both front-end and back-end.
+
 ## License
 
 Released under the terms of the GNU General Public License v3.
