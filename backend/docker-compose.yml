@@ -1,5 +1,6 @@
 services:
   backend-nhentai-downloader:
+    container_name: nhentai-downloader-backend
     restart: unless-stopped
     build: .
     ports:
